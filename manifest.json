@@ -1,0 +1,15 @@
+{
+  "name": "Ne?",
+  "description": "Gemini Nano for Language Learning",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icons/ne16.png"
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"],
+    "run_at": "document_start"
+  }]
+}
