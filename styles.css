@@ -1,0 +1,28 @@
+.group-frame {
+  border: 3px solid #292925;
+  background: #fdfac4;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  position: relative;
+}
+
+.group-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 10;
+
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #ff9d00;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.group-btn:hover {
+  background: #0056b3;
+}

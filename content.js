@@ -14,13 +14,13 @@
 async function preparePage(session) {
 
   const selectors = [
+    'main',
+    '.main',
+    '#main',
     'article',
     '.article-body',
     '.article-content',
     '.article-text',
-    'main',
-    '.main',
-    '#main',
     'post',
     '.post',
     '#post',
@@ -47,7 +47,12 @@ async function preparePage(session) {
   allArticles.forEach(article => {
 
     let textBlocks = getTextBlocks(article); // get smaller blocks within + divs longer than x chars
-    let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=700);
+    for (block of textBlocks){
+      console.log(block.innerText)
+    }
+
+    let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=500);
+    
     
     for (let group of groupedTextBlocks){
       addPromptButton(group)
@@ -58,20 +63,26 @@ async function preparePage(session) {
 
 
 function getTextBlocks(article){
-  const candidates = article.querySelectorAll('p, div, section, span, li, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
-  const textBlocks = Array.from(candidates).filter(el => {
+  const candidates = article.querySelectorAll('p, div, section, span, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
+  const candidatesArray = Array.from(candidates);
 
-    // skip invisible
+  // remove elements that contain other elements (avoid double counting text) e.g. a <div> that contains a <p>
+  const topLevel = candidatesArray.filter(el => !candidatesArray.some(other => other !== el && el.contains(other)));
+
+  const textBlocks = topLevel.filter(el => {
+
+    if (el.querySelector('img, video, iframe, svg, audio, source, embed, object')) return false // is not text
+
     const style = window.getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    if (style.display === 'none' || style.visibility === 'hidden') return false; // invisible
 
-    if (el.tagName.toLowerCase() === "div") {
-      const text = el.innerText?.trim() || '';
-      if (text.length < 200) return false; // too short
-      if (text.split(' ').length < 3) return false; // not enough words
-      return true;
-    }
+    const text = el.innerText?.trim() || '';
+    const html = el.innerHTML.trim() || '';
+    if (text.length < 35) return false; // too short
+    if (text.split(' ').length < 3) return false; // not enough words
+    if (text.length / html.length < 0.2) return false; // is mostly markup / meta
     return true;
+    
   });
   return textBlocks
 }
@@ -83,12 +94,12 @@ function groupTextBlocks(textBlocks, minChars) {
   let currentGroup = [];
   let currentSumChars = 0;
 
-  textBlocks.forEach(block => {
+  textBlocks.forEach((block, idx) => {
     const length = block.innerText.length;
     currentGroup.push(block);
     currentSumChars += length;
 
-    if (currentSumChars >= minChars) {
+    if (currentSumChars >= minChars || block.nextSibling !== textBlocks[idx+1]) {
       groups.push(currentGroup);
       currentGroup = [];
       currentSumChars = 0;
@@ -115,28 +126,35 @@ function groupTextBlocks(textBlocks, minChars) {
 
 function addPromptButton(group){
 
+  const wrapper = document.createElement('div');
+  wrapper.className = 'group-frame';
+  wrapper.style.position = 'relative';
   const topMostBlock = group[0];
-  const rect = topMostBlock.getBoundingClientRect();
-  const btn = document.createElement('button');
+  topMostBlock.parentNode.insertBefore(wrapper, topMostBlock);
+  group.forEach(block => wrapper.appendChild(block));
 
+  // const rect = topMostBlock.getBoundingClientRect();
+  const btn = document.createElement('button');
+  btn.className = 'group-btn';
   btn.textContent = 'go away';
 
-  Object.assign(btn.style, {
-    position: 'absolute', // position relative to page
-    top: `${window.scrollY + rect.top}px`,       // align with top of paragraph
-    left: `${rect.right + 10 + window.scrollX}px`, // 10px to the right
-    zIndex: 1000,
-    padding: '4px 8px',
-    fontSize: '12px',
-    cursor: 'pointer',
-    background: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-  });
 
-  document.body.appendChild(btn);
+  // Object.assign(btn.style, {
+  //   position: 'relative', // position relative to page
+  //   top: `${window.scrollY + rect.top}px`,       // align with top of paragraph
+  //   left: `${rect.right + 10 + window.scrollX}px`, // 10px to the right
+  //   zIndex: 1000,
+  //   padding: '4px 8px',
+  //   fontSize: '12px',
+  //   cursor: 'pointer',
+  //   background: '#007bff',
+  //   color: 'white',
+  //   border: 'none',
+  //   borderRadius: '4px',
+  // });
 
+  topMostBlock.appendChild(btn);
+  console.log("buttons added") // debug
 
   btn.addEventListener('click', async () => {
     //dispatch promp processing for the whole group here <---------------------------------------
