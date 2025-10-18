@@ -63,7 +63,7 @@ async function preparePage(session) {
 
 
 function getTextBlocks(article){
-  const candidates = article.querySelectorAll('p, div, section, span, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
+  const candidates = article.querySelectorAll('p, div, li, section, span, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
   const candidatesArray = Array.from(candidates);
 
   // remove elements that contain other elements (avoid double counting text) e.g. a <div> that contains a <p>
@@ -80,7 +80,7 @@ function getTextBlocks(article){
     const html = el.innerHTML.trim() || '';
     if (text.length < 35) return false; // too short
     if (text.split(' ').length < 3) return false; // not enough words
-    if (text.length / html.length < 0.2) return false; // is mostly markup / meta
+    // if (text.length / html.length < 0.2) return false; // is mostly markup / meta
     return true;
     
   });
@@ -99,7 +99,7 @@ function groupTextBlocks(textBlocks, minChars) {
     currentGroup.push(block);
     currentSumChars += length;
 
-    if (currentSumChars >= minChars || block.nextSibling !== textBlocks[idx+1]) {
+    if (currentSumChars >= minChars || block.nextElementSibling !== textBlocks[idx+1]) {
       groups.push(currentGroup);
       currentGroup = [];
       currentSumChars = 0;
