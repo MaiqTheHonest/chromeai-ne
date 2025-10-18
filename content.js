@@ -1,6 +1,12 @@
+
 // IIFE change to main later?
+
 (async () => {
   console.log("main run")
+  window.turndownService = new TurndownService();
+  unitTest(); // debug
+  // computeElementTextStyle(document.querySelector('p')); <----------------------------- XXX
+
   const session = await LanguageModel.create({outputlanguage: "en"});
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "INIT_NE") {
@@ -12,7 +18,7 @@
 
 
 async function preparePage(session) {
-
+  
   const selectors = [
     'main',
     '.main',
@@ -41,17 +47,18 @@ async function preparePage(session) {
     }
   }
 
-  // debugging
-  console.log("Located main text body: ", allArticles);
+  // debug
+  // console.log("Located main text body: ", allArticles);
 
   allArticles.forEach(article => {
 
     let textBlocks = getTextBlocks(article); // get smaller blocks within + divs longer than x chars
     for (block of textBlocks){
-      console.log(block.innerText)
+      //debug
+      // console.log(block.innerText)
     }
 
-    let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=500);
+    let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=700);
     
     
     for (let group of groupedTextBlocks){
@@ -63,11 +70,16 @@ async function preparePage(session) {
 
 
 function getTextBlocks(article){
-  const candidates = article.querySelectorAll('p, div, li, section, span, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
-  const candidatesArray = Array.from(candidates);
+  const candidates = article.querySelectorAll('p, div, li, ul, dl, ol, b, section, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
+  let candidatesArray = Array.from(candidates);
 
-  // remove elements that contain other elements (avoid double counting text) e.g. a <div> that contains a <p>
-  const topLevel = candidatesArray.filter(el => !candidatesArray.some(other => other !== el && el.contains(other)));
+  // remove parents with too small own (non-child) text
+  candidatesArray = candidatesArray.filter(el => getTopLevelText(el).length >= 30);
+
+  // remove children whose parents are already present with own text (to avoid double counting text)
+  topLevel = candidatesArray.filter(el => !candidatesArray.some(p => p !== el && p.contains(el)));
+
+  // const topLevel = candidatesArray.filter(el => !candidatesArray.some(other => other !== el && el.contains(other))); <------ XXX
 
   const textBlocks = topLevel.filter(el => {
 
@@ -78,7 +90,7 @@ function getTextBlocks(article){
 
     const text = el.innerText?.trim() || '';
     const html = el.innerHTML.trim() || '';
-    if (text.length < 35) return false; // too short
+    if (text.length < 30) return false; // too short
     if (text.split(' ').length < 3) return false; // not enough words
     // if (text.length / html.length < 0.2) return false; // is mostly markup / meta
     return true;
@@ -105,7 +117,6 @@ function groupTextBlocks(textBlocks, minChars) {
       currentSumChars = 0;
     }
   });
-
   // merge last group with 2nd to last if its smaller than minChars
   if (currentGroup.length > 0) {
     if (groups.length > 0) {
@@ -138,29 +149,16 @@ function addPromptButton(group){
   btn.className = 'group-btn';
   btn.textContent = 'go away';
 
-
-  // Object.assign(btn.style, {
-  //   position: 'relative', // position relative to page
-  //   top: `${window.scrollY + rect.top}px`,       // align with top of paragraph
-  //   left: `${rect.right + 10 + window.scrollX}px`, // 10px to the right
-  //   zIndex: 1000,
-  //   padding: '4px 8px',
-  //   fontSize: '12px',
-  //   cursor: 'pointer',
-  //   background: '#007bff',
-  //   color: 'white',
-  //   border: 'none',
-  //   borderRadius: '4px',
-  // });
-
-  topMostBlock.appendChild(btn);
+  topMostBlock.insertAdjacentElement('beforebegin', btn);
   console.log("buttons added") // debug
 
   btn.addEventListener('click', async () => {
     //dispatch promp processing for the whole group here <---------------------------------------
     console.log("prompt button clicked") // debug
+    // pasting response back
     const responseGrouped = await promptByGroup(group);
-    group.forEach((block, idx) => block.innerText = responseGrouped[idx])
+    console.log("Response grouped is:", responseGrouped)
+    group.forEach((block, idx) => block.innerHTML = responseGrouped[idx])
   });
 }
 
@@ -173,35 +171,61 @@ async function promptByGroup(group){
 
   // create the final form of prompt/query for the API, with a separator
   group.forEach((block, idx) => {
-    const marker = `<<<[[[PARA_${idx + 1}]]]>>>`;
-    promptText += `${marker}\n${block.innerText}\n\n`;
+    const marker = `TTTPARA${idx + 1}TTT`;
+    promptText += `${marker}\n${block.innerHTML}\n\n`;
   });
 
+  // convert to markdown to preserve formatting
+  promptText = window.turndownService.turndown(promptText);
   console.log("prompt is: ", promptText) // debug
 
   const availability = await LanguageModel.availability();
   if (availability==='available'){
     const session = await LanguageModel.create({outputlanguage: "en"})
-    const response = await session.prompt(`Translate these unrelated paragraphs into German. Keep the <<<[[[PARA_x]]]>>> separators as they are.` + 
-      ` Respond with just the translations and separators between them: ${promptText}`)
+    let response = await session.prompt(`Translate these paragraph(s) into German. Keep the TTTPARAxTTT separator(s) in the same position within the sentence.` + 
+      `Keep source formatting. Respond with just the separator(s) and translation(s): ${promptText}`)
+      // convert response from markdown to html
+    console.log("raw markdown response is: ", response)
+    console.log("END")
+    response = marked.parse(response, {breaks: true})
+    console.log("HTML response is: ", response)
+    console.log("END")
     
-      if (response){
-        let responseGrouped = [];
-        for (let idx = 0; idx < group.length; idx+=1) {
-          
-          const marker = `<<<[[[PARA_${idx + 1}]]]>>>`;
-          const nextMarker = `<<<[[[PARA_${idx + 2}]]]>>>`;
-          
-          let text = response.split(marker)[1] || ''; // cut off everything before first marker
-          text = text.split(nextMarker)[0];           // cut off everything after second marker
-          responseGrouped.push(text.trim())
-        };
-        console.log(responseGrouped); // debug
-        return responseGrouped
+    if (response){
+      let responseGrouped = [];
+      for (let idx = 0; idx < group.length; idx+=1) {
+        
+        const marker = `TTTPARA${idx + 1}TTT`;
+        const nextMarker = `TTTPARA${idx + 2}TTT`;
+        
+        let text = response.split(marker)[1] || ''; // cut off everything before first marker
+        text = text.split(nextMarker)[0] || '';        // cut off everything after second marker
+        responseGrouped.push(text.trim())
+      };
+      // console.log("Grouped response is:", responseGrouped); // debug
+      return responseGrouped
       }
   }
 }
 
+
+function unitTest(){
+  const pureHTML = "**Hellow World**"; 
+  const md = marked.parse(pureHTML);
+  console.log(md)
+}
+
+
+
+function getPureParentText(el) {
+  let text = "";
+  el.childNodes.forEach(node => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      text += node.textContent.trim() + " ";
+    }
+  });
+  return text.trim();
+}
 
 
 
@@ -212,31 +236,4 @@ async function promptByGroup(group){
   // unwantedSelectors.forEach(sel => {
   //     mainText.querySelectorAll(sel).forEach(el => el.remove());
   // });
-
-  // let allParagraphs = mainText.querySelectorAll('p:not(:has(span))')
-
-  // allParagraphs.forEach(p => {
-  //   if (p.innerText.trim().length <= 30) {
-  //     p.remove();
-  //   }
-  // });
-
-
-
-
-//   let textBlocks = Array.from(allParagraphs);
-//   console.log(textBlocks[0]);
-
-//   if (textBlocks[0]) {
-//       const firstParagraph = textBlocks[0].innerText.trim();
-//       console.log("Article text:\n", firstParagraph);
-//       const rephrased = await session.prompt(`Translate this article to German and rephrase it so that a language student of level\n`
-//           + `A1 will understand it, respond with just the final text, do not add any formatting: ${firstParagraph}`, 
-//       );
-//       textBlocks[0].innerText = rephrased;
-//       console.log("rephrased text:\n", rephrased)
-//   } else {
-//       console.log("Couldnt find text");
-//   }
-
 

@@ -5,6 +5,11 @@
   padding: 12px;
   margin: 12px 0;
   position: relative;
+  overflow: hidden;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  padding-left: 30px;
+  padding-right: 30px;
 }
 
 .group-btn {
