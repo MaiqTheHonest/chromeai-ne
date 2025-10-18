@@ -88,11 +88,14 @@ function getTextBlocks(article){
     const style = window.getComputedStyle(el);
     if (style.display === 'none' || style.visibility === 'hidden') return false; // invisible
 
-    const text = el.innerText?.trim() || '';
+    const text = el.textContent?.trim() || ' ';
     const html = el.innerHTML.trim() || '';
+
+    if (el.tagName.toLowerCase() === 'span') return false; // is a navigation bar button
     if (text.length < 30) return false; // too short
-    if (text.split(' ').length < 3) return false; // not enough words
-    // if (text.length / html.length < 0.2) return false; // is mostly markup / meta
+    if (text.split(' ').length < 5) return false; // not enough words
+    if (text.length / html.length < 0.3) return false; // is mostly markup / meta
+    console.log(`UNFILTERED ELEMENT: \n${el.outerHTML}\nfull text = ${el.innerText}\nlinkText.length = ${linkText.length}\ntext.length = ${text.length}`) // debug
     return true;
     
   });
@@ -153,7 +156,7 @@ function addPromptButton(group){
   console.log("buttons added") // debug
 
   btn.addEventListener('click', async () => {
-    //dispatch promp processing for the whole group here <---------------------------------------
+    //dispatch promp processing for the whole group
     console.log("prompt button clicked") // debug
     // pasting response back
     const responseGrouped = await promptByGroup(group);
@@ -210,14 +213,12 @@ async function promptByGroup(group){
 
 
 function unitTest(){
-  const pureHTML = "**Hellow World**"; 
-  const md = marked.parse(pureHTML);
-  console.log(md)
+  console.log('test')
 }
 
 
 
-function getPureParentText(el) {
+function getTopLevelText(el) {
   let text = "";
   el.childNodes.forEach(node => {
     if (node.nodeType === Node.TEXT_NODE) {
