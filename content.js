@@ -1,4 +1,4 @@
-
+// import * as smd from "streaming-markdown";
 // IIFE change to main later?
 
 (async () => {
@@ -95,7 +95,7 @@ function getTextBlocks(article){
     if (text.length < 30) return false; // too short
     if (text.split(' ').length < 5) return false; // not enough words
     if (text.length / html.length < 0.3) return false; // is mostly markup / meta
-    console.log(`UNFILTERED ELEMENT: \n${el.outerHTML}\nfull text = ${el.innerText}\nlinkText.length = ${linkText.length}\ntext.length = ${text.length}`) // debug
+    // console.log(`UNFILTERED ELEMENT: \n${el.outerHTML}\nfull text = ${el.innerText}\nlinkText.length = ${linkText.length}\ntext.length = ${text.length}`) // debug
     return true;
     
   });
@@ -159,9 +159,10 @@ function addPromptButton(group){
     //dispatch promp processing for the whole group
     console.log("prompt button clicked") // debug
     // pasting response back
-    const responseGrouped = await promptByGroup(group);
-    console.log("Response grouped is:", responseGrouped)
-    group.forEach((block, idx) => block.innerHTML = responseGrouped[idx])
+    await promptByGroup(group);
+    // const responseGrouped = await promptByGroup(group);
+    // console.log("Response grouped is:", responseGrouped)
+    // group.forEach((block, idx) => block.innerHTML = responseGrouped[idx])
   });
 }
 
@@ -170,44 +171,61 @@ function addPromptButton(group){
 
 async function promptByGroup(group){
 
-  let promptText = '';
+  // let promptText = '';
 
-  // create the final form of prompt/query for the API, with a separator
-  group.forEach((block, idx) => {
-    const marker = `TTTPARA${idx + 1}TTT`;
-    promptText += `${marker}\n${block.innerHTML}\n\n`;
-  });
+  // // create the final form of prompt/query for the API, with a separator
+  // group.forEach((block, idx) => {
+  //   const marker = `TTTPARA${idx + 1}TTT`;
+  //   promptText += `${marker}\n${block.innerHTML}\n\n`;
+  // });
 
   // convert to markdown to preserve formatting
-  promptText = window.turndownService.turndown(promptText);
-  console.log("prompt is: ", promptText) // debug
-
+  
   const availability = await LanguageModel.availability();
   if (availability==='available'){
     const session = await LanguageModel.create({outputlanguage: "en"})
-    let response = await session.prompt(`Translate these paragraph(s) into German. Keep the TTTPARAxTTT separator(s) in the same position within the sentence.` + 
-      `Keep source formatting. Respond with just the separator(s) and translation(s): ${promptText}`)
-      // convert response from markdown to html
-    console.log("raw markdown response is: ", response)
-    console.log("END")
-    response = marked.parse(response, {breaks: true})
-    console.log("HTML response is: ", response)
-    console.log("END")
-    
-    if (response){
-      let responseGrouped = [];
-      for (let idx = 0; idx < group.length; idx+=1) {
+    for (block of group){
+      let promptText = block.innerHTML;
+      block.innerHTML = '';
+      promptText = window.turndownService.turndown(promptText);
+      console.log("prompt is: ", promptText) // debug
+      let response = await session.promptStreaming(`Translate this paragraph into Spanish.` + 
+        `Keep source formatting and punctuation as is. Respond with just the translation: ${promptText}`)
         
-        const marker = `TTTPARA${idx + 1}TTT`;
-        const nextMarker = `TTTPARA${idx + 2}TTT`;
+      
+      const renderer = smd.default_renderer(block);
+      const parser = smd.parser(renderer);
+
+      for await (const chunk of response) {
+        // block.innerHTML += await marked.parse(chunk, {breaks: true});
+        smd.parser_write(parser, chunk)
         
-        let text = response.split(marker)[1] || ''; // cut off everything before first marker
-        text = text.split(nextMarker)[0] || '';        // cut off everything after second marker
-        responseGrouped.push(text.trim())
       };
-      // console.log("Grouped response is:", responseGrouped); // debug
-      return responseGrouped
-      }
+      smd.parser_end(parser);
+      console.log("innertext response is:\n", block.innerText)
+    }
+
+      // convert response from markdown to html
+    // console.log("raw markdown response is: ", response)
+    // console.log("END")
+    // response = marked.parse(response, {breaks: true})
+    // console.log("HTML response is: ", response)
+    // console.log("END")
+    
+    // if (response){
+    //   let responseGrouped = [];
+    //   for (let idx = 0; idx < group.length; idx+=1) {
+        
+    //     const marker = `TTTPARA${idx + 1}TTT`;
+    //     const nextMarker = `TTTPARA${idx + 2}TTT`;
+        
+    //     let text = response.split(marker)[1] || ''; // cut off everything before first marker
+    //     text = text.split(nextMarker)[0] || '';        // cut off everything after second marker
+    //     responseGrouped.push(text.trim())
+    //   };
+    //   // console.log("Grouped response is:", responseGrouped); // debug
+    //   return responseGrouped
+    //   }
   }
 }
 
