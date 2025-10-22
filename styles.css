@@ -1,21 +1,22 @@
 .group-frame {
   border: 3px solid #292925;
-  background: #fdfac4;
-  border-radius: 8px;
-  padding: 12px;
-  margin: 12px 0;
-  position: relative;
-  overflow: hidden;
-  padding-top: 15px;
-  padding-bottom: 15px;
+  background: #fdfac400;
+  border-radius: 0px;
+  margin-top: 10px;
+  position: absolute;
+  padding-top: 3px;
+  padding-bottom: 3px;
   padding-left: 30px;
   padding-right: 30px;
+  display: flow-root;
+  min-height: 2em;
 }
+
 
 .group-btn {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 0px;
+  right: -30px;
   z-index: 10;
   width: 24px;
   height: 24px;
@@ -27,6 +28,8 @@
   line-height: 1;
 }
 
-.group-btn:hover {
-  background: #0056b3;
+/* basically "change frame that has a currently hovered button inside it" */
+.group-frame:has(.group-btn:hover) {
+  background: #fdfac4;
 }
+

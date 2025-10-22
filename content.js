@@ -1,13 +1,18 @@
-// import * as smd from "streaming-markdown";
+// 네?
 // IIFE change to main later?
 
 (async () => {
   console.log("main run")
   window.turndownService = new TurndownService();
   unitTest(); // debug
-  // computeElementTextStyle(document.querySelector('p')); <----------------------------- XXX
 
-  const session = await LanguageModel.create({outputlanguage: "en"});
+  const session = await LanguageModel.create({outputlanguage:"en",
+  monitor(m) {
+    m.addEventListener('downloadprogress', (e) => {
+      console.log(`Downloaded ${e.loaded * 100}%`);
+    });
+  },
+  });
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "INIT_NE") {
       preparePage(session);
@@ -21,12 +26,12 @@ async function preparePage(session) {
   
   const selectors = [
     'main',
-    '.main',
-    '#main',
     'article',
     '.article-body',
     '.article-content',
     '.article-text',
+    '.main',
+    '#main',
     'post',
     '.post',
     '#post',
@@ -34,7 +39,8 @@ async function preparePage(session) {
     '.story-content',
     '.content',
     '#content',
-    'article-body__content'
+    'article-body__content',
+    'body'
   ]
 
   let allArticles = null;
@@ -69,32 +75,52 @@ async function preparePage(session) {
 
 
 
+function isList(node){
+  return ["li", "ul", "dl", "ol"].includes(node.tagName.toLowerCase())
+}
+
+// function isClassless(node){
+//   return !node.classList.length > 0
+// }
+
+
+
 function getTextBlocks(article){
-  const candidates = article.querySelectorAll('p, div, li, ul, dl, ol, b, section, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
+  const candidates = article.querySelectorAll('p, div, li, ul, dl, ol, h1, h2, h3, section, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
   let candidatesArray = Array.from(candidates);
 
-  // remove parents with too small own (non-child) text
-  candidatesArray = candidatesArray.filter(el => getTopLevelText(el).length >= 30);
+  // keep elements with own (non-child) text, paragraphs, or lists
+  candidatesArray = candidatesArray.filter(el => {
+    if (getTopLevelText(el).length >= 20 || el.innerText.length > 20 || isList(el)) {return true;} 
+    else {
+      console.log("removed element: ", el);
+      return false;
+    }
+  });
+  // keep only the lowest-level text elements (drop elements containing already selected text elements)
+  candidatesArray = candidatesArray.filter(el => !candidatesArray.some(p => p !== el && el.contains(p) && getTopLevelText(el).length < 20));
+  // keep only the text nodes that are not part of selected lists (i.e. keep only standalone text nodes)
+  // candidatesArray = candidatesArray.filter(el => !candidatesArray.some(p => p !== el && p.contains(el) && !isList(p)));
 
-  // remove children whose parents are already present with own text (to avoid double counting text)
-  topLevel = candidatesArray.filter(el => !candidatesArray.some(p => p !== el && p.contains(el)));
+  const textBlocks = candidatesArray.filter(el => {
 
-  // const topLevel = candidatesArray.filter(el => !candidatesArray.some(other => other !== el && el.contains(other))); <------ XXX
-
-  const textBlocks = topLevel.filter(el => {
-
-    if (el.querySelector('img, video, iframe, svg, audio, source, embed, object')) return false // is not text
-
+    if (el.querySelector('img, video, figure, iframe, svg, audio, source, embed, object')) return false // is not text
+    
     const style = window.getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden') return false; // invisible
+    if (style.display === 'none' || 
+      style.visibility === 'hidden' ||
+      style.opacity === "0" ||
+      style.clip !== "auto" ||
+      style.clipPath !== "none") return false; // invisible
+
 
     const text = el.textContent?.trim() || ' ';
     const html = el.innerHTML.trim() || '';
 
     if (el.tagName.toLowerCase() === 'span') return false; // is a navigation bar button
-    if (text.length < 30) return false; // too short
-    if (text.split(' ').length < 5) return false; // not enough words
-    if (text.length / html.length < 0.3) return false; // is mostly markup / meta
+    if (text.length < 20) return false; // too short
+    if (text.split(' ').length < 3) return false; // not enough words
+    if (text.length / html.length < 0.2) return false; // is mostly markup / meta / hyperlink
     // console.log(`UNFILTERED ELEMENT: \n${el.outerHTML}\nfull text = ${el.innerText}\nlinkText.length = ${linkText.length}\ntext.length = ${text.length}`) // debug
     return true;
     
@@ -144,13 +170,20 @@ function addPromptButton(group){
   wrapper.className = 'group-frame';
   wrapper.style.position = 'relative';
   const topMostBlock = group[0];
+
+  // do not create frame if any parent already has a frame (to avoid frame nesting)
+  if (topMostBlock.closest(".group-frame")) return;
+
   topMostBlock.parentNode.insertBefore(wrapper, topMostBlock);
-  group.forEach(block => wrapper.appendChild(block));
+  group.forEach(block => {
+    // if (block.tagName.toLowerCase() === 'p') {block.style.margin = '0'};
+    wrapper.appendChild(block);
+  });
 
   // const rect = topMostBlock.getBoundingClientRect();
   const btn = document.createElement('button');
   btn.className = 'group-btn';
-  btn.textContent = 'go away';
+  btn.textContent = '네?';
 
   topMostBlock.insertAdjacentElement('beforebegin', btn);
   console.log("buttons added") // debug
@@ -168,16 +201,7 @@ function addPromptButton(group){
 
 
 
-
 async function promptByGroup(group){
-
-  // let promptText = '';
-
-  // // create the final form of prompt/query for the API, with a separator
-  // group.forEach((block, idx) => {
-  //   const marker = `TTTPARA${idx + 1}TTT`;
-  //   promptText += `${marker}\n${block.innerHTML}\n\n`;
-  // });
 
   // convert to markdown to preserve formatting
   
@@ -185,6 +209,7 @@ async function promptByGroup(group){
   if (availability==='available'){
     const session = await LanguageModel.create({outputlanguage: "en"})
     for (block of group){
+      console.log("current block is: ", block)
       let promptText = block.innerHTML;
       block.innerHTML = '';
       promptText = window.turndownService.turndown(promptText);
@@ -204,42 +229,14 @@ async function promptByGroup(group){
       smd.parser_end(parser);
       console.log("innertext response is:\n", block.innerText)
     }
-
-      // convert response from markdown to html
-    // console.log("raw markdown response is: ", response)
-    // console.log("END")
-    // response = marked.parse(response, {breaks: true})
-    // console.log("HTML response is: ", response)
-    // console.log("END")
-    
-    // if (response){
-    //   let responseGrouped = [];
-    //   for (let idx = 0; idx < group.length; idx+=1) {
-        
-    //     const marker = `TTTPARA${idx + 1}TTT`;
-    //     const nextMarker = `TTTPARA${idx + 2}TTT`;
-        
-    //     let text = response.split(marker)[1] || ''; // cut off everything before first marker
-    //     text = text.split(nextMarker)[0] || '';        // cut off everything after second marker
-    //     responseGrouped.push(text.trim())
-    //   };
-    //   // console.log("Grouped response is:", responseGrouped); // debug
-    //   return responseGrouped
-    //   }
   }
 }
-
-
-function unitTest(){
-  console.log('test')
-}
-
 
 
 function getTopLevelText(el) {
   let text = "";
   el.childNodes.forEach(node => {
-    if (node.nodeType === Node.TEXT_NODE) {
+    if (node.nodeType === Node.TEXT_NODE || ["i", "b", "s"].includes(node.tagName?.toLowerCase())) {
       text += node.textContent.trim() + " ";
     }
   });
@@ -248,11 +245,6 @@ function getTopLevelText(el) {
 
 
 
-
-  // const unwantedSelectors = ['visually-hidden', 'author', 'header', '.ad', '.meta',
-  //     '.advertisement', '.promo', '.sidebar', '.related-links', 'iframe', 'script'];
-  
-  // unwantedSelectors.forEach(sel => {
-  //     mainText.querySelectorAll(sel).forEach(el => el.remove());
-  // });
-
+function unitTest(){
+  console.log('test')
+}
