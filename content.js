@@ -169,33 +169,42 @@ function addPromptButton(group){
   const wrapper = document.createElement('div');
   wrapper.className = 'group-frame';
   wrapper.style.position = 'relative';
+  
   const topMostBlock = group[0];
-
+  
   // do not create frame if any parent already has a frame (to avoid frame nesting)
   if (topMostBlock.closest(".group-frame")) return;
-
+  
   topMostBlock.parentNode.insertBefore(wrapper, topMostBlock);
   group.forEach(block => {
-    // if (block.tagName.toLowerCase() === 'p') {block.style.margin = '0'};
     wrapper.appendChild(block);
+    wrapper.style.minHeight = wrapper.offsetHeight + "px"; // prevent frame shrinking
   });
 
   // const rect = topMostBlock.getBoundingClientRect();
   const btn = document.createElement('button');
   btn.className = 'group-btn';
+
   btn.textContent = '네?';
 
   topMostBlock.insertAdjacentElement('beforebegin', btn);
   console.log("buttons added") // debug
 
+  // store original text content in case it needs to be reverted to
+  let originalBlocks = group.map(b => b.textContent);
+
   btn.addEventListener('click', async () => {
-    //dispatch promp processing for the whole group
+    
+    btn.classList.toggle('reverter')
     console.log("prompt button clicked") // debug
-    // pasting response back
-    await promptByGroup(group);
-    // const responseGrouped = await promptByGroup(group);
-    // console.log("Response grouped is:", responseGrouped)
-    // group.forEach((block, idx) => block.innerHTML = responseGrouped[idx])
+
+    if (!btn.classList.contains('reverter')){
+      group.forEach((block, idx) => block.textContent = originalBlocks[idx]);
+    } else {
+      //dispatch promp processing for the whole group, with streaming
+      await promptByGroup(group);
+    }
+
   });
 }
 
