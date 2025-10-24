@@ -7,13 +7,12 @@
   margin-left: 3px;
   position: absolute;
   padding-top: 3px;
-  padding-bottom: 3px;
+  padding-bottom: 0px;
   padding-left: 10px;
   padding-right: 30px;
   display: flow-root;
   min-height: 2em;
 }
-
 
 .group-btn {
   all: unset;
@@ -21,22 +20,37 @@
   top: -12px;
   right: 0px;
   z-index: 10;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: #ff9d00;
-  color: rgb(0, 0, 0);
+  width: 20px;
+  height: 20px;
+  text-align: center;
+  color: #32323271;
+  border: 2px solid #32323271;
+  box-shadow: 2px 2px #32323271;
+  background-color: #eee;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 10px;
   line-height: 1;
 }
 
+.group-btn:hover {
+  color: #323232;
+  border: 2px solid #323232;
+  box-shadow: 2px 2px #323232;
+}
+
+
+
 .group-btn.reverter {
-  background: #ff3737;
+  background: #d3fdf6;
+  color: #133239;
+  border: 2px solid #133239;
+  box-shadow: 2px 2px #133239;
+  font-size: 20px;
 }
 
 /* basically "change frame that has a currently hovered button inside it" */
-.group-frame:has(.group-btn:hover) {
+.group-frame:has(.group-btn:hover, .easy-rate-button:hover, .hard-rate-button:hover) {
   background: #fdfac4;
   border: 1px solid #00000073;
   border-radius:1px 5px 1px 5px;
@@ -46,3 +60,56 @@
   margin-top: 15px; /* has to be this + original margin-top */
 }
 
+
+.rate-button {
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-align: center;
+  text-decoration: none;
+  width: auto;
+  height: auto;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  padding-left: 8px;
+  padding-right: 8px;
+  border-radius: 1px;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.rate-button:active {
+  box-shadow: none;
+  transform: translateY(2px);
+  transform: translateX(2px);
+  z-index: 2;
+}
+
+.hard-rate-button {
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+  color: #fd6666;
+  border: 2px solid #fd6666;
+  box-shadow: 2px 2px 0 #ff6c6c;
+  z-index: 2;
+}
+
+.easy-rate-button {
+  position: absolute;
+  bottom: 4px;
+  right: 56px;
+  color: #269f5c;
+  border: 2px solid #51c183;
+  box-shadow: 2px 2px 0 #51c183;
+  z-index: 1;
+}
+
+.hard-rate-button:hover {
+  background-color: #ff6c6c;
+  color: #fff;
+}
+
+.easy-rate-button:hover {
+  background-color: #51c183;
+  color: #fff;
+}

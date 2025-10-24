@@ -68,7 +68,7 @@ async function preparePage(session) {
     
     
     for (let group of groupedTextBlocks){
-      addPromptButton(group)
+      addGroupFrame(group)
     };
   });
 };
@@ -164,7 +164,7 @@ function groupTextBlocks(textBlocks, minChars) {
 
 
 
-function addPromptButton(group){
+function addGroupFrame(group){
 
   const wrapper = document.createElement('div');
   wrapper.className = 'group-frame';
@@ -199,10 +199,15 @@ function addPromptButton(group){
     console.log("prompt button clicked") // debug
 
     if (!btn.classList.contains('reverter')){
+      btn.textContent = "네?";
       group.forEach((block, idx) => block.textContent = originalBlocks[idx]);
+      removeRatingButtons(wrapper);
+
     } else {
+      btn.textContent = "↺";
       //dispatch promp processing for the whole group, with streaming
       await promptByGroup(group);
+      addRatingButtons(wrapper, group);
     }
 
   });
@@ -211,8 +216,6 @@ function addPromptButton(group){
 
 
 async function promptByGroup(group){
-
-  // convert to markdown to preserve formatting
   
   const availability = await LanguageModel.availability();
   if (availability==='available'){
@@ -220,23 +223,25 @@ async function promptByGroup(group){
     for (block of group){
       console.log("current block is: ", block)
       let promptText = block.innerHTML;
-      block.innerHTML = '';
       promptText = window.turndownService.turndown(promptText);
       console.log("prompt is: ", promptText) // debug
       let response = await session.promptStreaming(`Translate this paragraph into Spanish.` + 
         `Keep source formatting and punctuation as is. Respond with just the translation: ${promptText}`)
         
-      
-      const renderer = smd.default_renderer(block);
-      const parser = smd.parser(renderer);
+        
+        const renderer = smd.default_renderer(block);
+        const parser = smd.parser(renderer);
+        
+      block.innerHTML = '';
 
       for await (const chunk of response) {
         // block.innerHTML += await marked.parse(chunk, {breaks: true});
         smd.parser_write(parser, chunk)
         
       };
+      // end of streaming
       smd.parser_end(parser);
-      console.log("innertext response is:\n", block.innerText)
+      console.log("innertext response is:\n", block.innerText);
     }
   }
 }
@@ -250,6 +255,30 @@ function getTopLevelText(el) {
     }
   });
   return text.trim();
+}
+
+
+
+function addRatingButtons(wrapper, group){
+  wrapper.style.height = wrapper.offsetHeight + 28 + "px"
+  const easyRateBtn = document.createElement('button');
+  easyRateBtn.className = 'easy-rate-button rate-button';
+  easyRateBtn.textContent = 'Easy';
+  group[group.length - 1].insertAdjacentElement('afterend', easyRateBtn);
+  
+  const hardRateBtn = document.createElement('button');
+  hardRateBtn.className = 'hard-rate-button rate-button';
+  hardRateBtn.textContent = 'Hard';
+  group[group.length - 1].insertAdjacentElement('afterend', hardRateBtn);
+
+}
+
+
+
+function removeRatingButtons(wrapper){
+  wrapper.style.height = '';
+  wrapper.querySelectorAll('.easy-rate-button, .hard-rate-button')
+    .forEach(btn => btn.remove());
 }
 
 
