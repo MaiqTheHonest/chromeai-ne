@@ -6,23 +6,32 @@
   window.turndownService = new TurndownService();
   unitTest(); // debug
 
-  const session = await LanguageModel.create({outputlanguage:"en",
+  let model = await LanguageModel.create({outputlanguage:"en",
   monitor(m) {
     m.addEventListener('downloadprogress', (e) => {
       console.log(`Downloaded ${e.loaded * 100}%`);
     });
   },
   });
+
+  let detector = await LanguageDetector.create({
+  monitor(m) {
+    m.addEventListener('downloadprogress', (e) => {
+      console.log(`Downloaded ${e.loaded * 100}%`);
+    });
+  },
+  });
+
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "INIT_NE") {
-      preparePage(session);
+      preparePage(model, detector);
     }
   });
 })();
 
 
 
-async function preparePage(session) {
+async function preparePage(model, detector) {
   
   const selectors = [
     'main',
@@ -56,32 +65,37 @@ async function preparePage(session) {
   // debug
   // console.log("Located main text body: ", allArticles);
 
-  allArticles.forEach(article => {
+  for (article of allArticles) {
 
     let textBlocks = getTextBlocks(article); // get smaller blocks within + divs longer than x chars
     for (block of textBlocks){
       //debug
       // console.log(block.innerText)
     }
-
+    
     let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=700);
     
     
     for (let group of groupedTextBlocks){
+      const language = await determineLanguage(group, detector);
+      console.log("language of this block is: ", language);
       addGroupFrame(group)
-    };
-  });
+    };  
+  }
 };
+
+
+
+async function determineLanguage(group, detector){
+  const results = await detector.detect(group[0].innerText)
+  return results[0].detectedLanguage
+}
 
 
 
 function isList(node){
   return ["li", "ul", "dl", "ol"].includes(node.tagName.toLowerCase())
 }
-
-// function isClassless(node){
-//   return !node.classList.length > 0
-// }
 
 
 
@@ -232,11 +246,13 @@ async function promptByGroup(group){
         const renderer = smd.default_renderer(block);
         const parser = smd.parser(renderer);
         
-      block.innerHTML = '';
-
-      for await (const chunk of response) {
-        // block.innerHTML += await marked.parse(chunk, {breaks: true});
-        smd.parser_write(parser, chunk)
+        let firstChunk = true;
+        for await (const chunk of response) {
+          if (firstChunk) {  
+            firstChunk = false;  
+            block.innerHTML = '';
+          };
+          smd.parser_write(parser, chunk)
         
       };
       // end of streaming

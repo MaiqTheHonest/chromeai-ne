@@ -2,7 +2,7 @@
   border: 1px dashed #0000001d;
   background: #fdfac400;
   border-radius: 0px;
-  margin-top: 8px;
+  margin-top: 11px;
   margin-bottom: 1px;
   margin-left: 3px;
   position: absolute;
@@ -23,10 +23,10 @@
   width: 20px;
   height: 20px;
   text-align: center;
-  color: #32323271;
+  color: #32323271 !important;
   border: 2px solid #32323271;
   box-shadow: 2px 2px #32323271;
-  background-color: #eee;
+  background-color: #eee !important;
   border-radius: 6px;
   cursor: pointer;
   font-size: 10px;
@@ -34,17 +34,17 @@
 }
 
 .group-btn:hover {
-  color: #323232;
-  border: 2px solid #323232;
+  color: #323232 !important;
+  border: 2px solid #323232 !important;
   box-shadow: 2px 2px #323232;
 }
 
 
 
 .group-btn.reverter {
-  background: #d3fdf6;
-  color: #133239;
-  border: 2px solid #133239;
+  background: #d3fdf6 !important;
+  color: #133239 !important;
+  border: 2px solid #133239 !important;
   box-shadow: 2px 2px #133239;
   font-size: 20px;
 }
@@ -62,6 +62,7 @@
 
 
 .rate-button {
+  all: unset; 
   font-size: 0.75rem;
   font-weight: bold;
   text-align: center;
@@ -89,7 +90,7 @@
   right: 8px;
   bottom: 4px;
   color: #fd6666;
-  border: 2px solid #fd6666;
+  border: 2px solid #fd6666 !important;
   box-shadow: 2px 2px 0 #ff6c6c;
   z-index: 2;
 }
@@ -99,7 +100,7 @@
   bottom: 4px;
   right: 56px;
   color: #269f5c;
-  border: 2px solid #51c183;
+  border: 2px solid #51c183 !important;
   box-shadow: 2px 2px 0 #51c183;
   z-index: 1;
 }
