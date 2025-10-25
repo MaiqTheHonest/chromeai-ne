@@ -12,5 +12,6 @@
     "js": ["smd.js", "turndown.js", "marked.js", "content.js"],
     "css": ["styles.css"],
     "run_at": "document_start"
-  }]
+  }],
+  "permissions": ["storage"]
 }

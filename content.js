@@ -3,30 +3,30 @@
 
 (async () => {
   console.log("main run")
+  const toggleStatus = await chrome.storage.local.get('enabled') // not sure why it takes time to access local storage but mkay
+  if (!toggleStatus.enabled) return // i.e. do nothing for this run
+  
   window.turndownService = new TurndownService();
   unitTest(); // debug
-
+  
   let model = await LanguageModel.create({outputlanguage:"en",
-  monitor(m) {
-    m.addEventListener('downloadprogress', (e) => {
-      console.log(`Downloaded ${e.loaded * 100}%`);
-    });
-  },
+    monitor(m) {
+      m.addEventListener('downloadprogress', (e) => {
+        console.log(`Downloaded ${e.loaded * 100}%`);
+      });
+    },
   });
-
+  
   let detector = await LanguageDetector.create({
-  monitor(m) {
-    m.addEventListener('downloadprogress', (e) => {
-      console.log(`Downloaded ${e.loaded * 100}%`);
-    });
-  },
+    monitor(m) {
+      m.addEventListener('downloadprogress', (e) => {
+        console.log(`Downloaded ${e.loaded * 100}%`);
+      });
+    },
   });
+  
+  preparePage(model, detector);
 
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type === "INIT_NE") {
-      preparePage(model, detector);
-    }
-  });
 })();
 
 
@@ -62,8 +62,12 @@ async function preparePage(model, detector) {
     }
   }
 
+  let languageGuessCounts = {"en": 1};
+
   // debug
   // console.log("Located main text body: ", allArticles);
+  if (!allArticles) return; // quit if nothing processable found on page
+
 
   for (article of allArticles) {
 
@@ -75,13 +79,27 @@ async function preparePage(model, detector) {
     
     let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=700);
     
-    
     for (let group of groupedTextBlocks){
-      const language = await determineLanguage(group, detector);
-      console.log("language of this block is: ", language);
+      if (group[0].innerText.length > 100) {
+        const language = await determineLanguage(group, detector);
+        languageGuessCounts[language] = (languageGuessCounts[language] || 0) + 1;
+        console.log("language of this block is: ", language); // debug
+      }
       addGroupFrame(group)
     };  
-  }
+  };
+
+  // find most common longuage guess and set it as current page's language
+  let maxKey = null;
+  let maxVal = -1;
+  for (const [key, value] of Object.entries(languageGuessCounts)) {
+    if (value > maxVal) {
+      maxVal = value;
+      maxKey = key;
+    }
+  };
+  console.log("Page language: ", maxKey); // debug
+
 };
 
 
@@ -189,7 +207,7 @@ function addGroupFrame(group){
   // do not create frame if any parent already has a frame (to avoid frame nesting)
   if (topMostBlock.closest(".group-frame")) return;
   
-  topMostBlock.parentNode.insertBefore(wrapper, topMostBlock);
+  topMostBlock.parentNode?.insertBefore(wrapper, topMostBlock);
   group.forEach(block => {
     wrapper.appendChild(block);
     wrapper.style.minHeight = wrapper.offsetHeight + "px"; // prevent frame shrinking

@@ -1,7 +1,43 @@
 <html>
-  <body>
-    <h1>Ne?</h1>
-    <button id="btn_rewrite_text"> rewrite text </button>
+  <head>
+    <link rel="stylesheet" href="styles.css">
+    <script src="chart.umd.min.js"></script>
+  </head>
+  <body class="extension-popup">
+    
+    <div class="chart">
+      <canvas id="myChart"></canvas>
+    </div>
+    
+    
+
+
+    <main class="text-area">
+
+      <div class="text-box">
+        <p>On/Off:</p>
+
+
+        <label class="switch">
+          <input id="main-toggle" type="checkbox" class="input">
+          <span class="slider">
+          </span>
+        </label>
+
+
+      </div>
+  
+      <div class="text-box">
+        <p>Language levels:</p>
+
+      </div>    
+  
+      <div class="text-box">
+        <p>Learning rate:</p>
+      </div>
+
+    </main>
+    
     <script src="popup.js"></script>
   </body>
 </html>
