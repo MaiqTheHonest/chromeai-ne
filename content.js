@@ -3,6 +3,7 @@
 
 (async () => {
   console.log("main run")
+
   const toggleStatus = await chrome.storage.local.get('enabled') // not sure why it takes time to access local storage but mkay
   if (!toggleStatus.enabled) return // i.e. do nothing for this run
   
@@ -24,9 +25,7 @@
       });
     },
   });
-  
   preparePage(model, detector);
-
 })();
 
 
@@ -62,7 +61,7 @@ async function preparePage(model, detector) {
     }
   }
 
-  let languageGuessCounts = {"en": 1};
+  let languageGuessCounts = {"en": 1}; // defaults to english if not guesses
 
   // debug
   // console.log("Located main text body: ", allArticles);
@@ -79,26 +78,36 @@ async function preparePage(model, detector) {
     
     let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=700);
     
+    // guess the language
     for (let group of groupedTextBlocks){
       if (group[0].innerText.length > 100) {
         const language = await determineLanguage(group, detector);
         languageGuessCounts[language] = (languageGuessCounts[language] || 0) + 1;
-        console.log("language of this block is: ", language); // debug
+        // console.log("language of this block is: ", language); // debug
       }
-      addGroupFrame(group)
+    };
+      // find most common language guess
+    let language = null;
+    let maxVal = -1;
+    for (const [key, value] of Object.entries(languageGuessCounts)) {
+      if (value > maxVal) {
+        maxVal = value;
+        language = key;
+      }
+    };
+    console.log("Page language: ", language); // debug
+
+    const result = await chrome.storage.local.get("levels");
+    let storedLevels = result.levels || {}; // default to no levels
+    let level = storedLevels[language] || 2.5; // default to medium level
+    level = getCEFR(level);
+    // storedLevels[language] = level;
+    // chrome.storage.local.set({ levels: storedLevels})
+
+    for (let group of groupedTextBlocks) {
+      addGroupFrame(group, language, level)
     };  
   };
-
-  // find most common longuage guess and set it as current page's language
-  let maxKey = null;
-  let maxVal = -1;
-  for (const [key, value] of Object.entries(languageGuessCounts)) {
-    if (value > maxVal) {
-      maxVal = value;
-      maxKey = key;
-    }
-  };
-  console.log("Page language: ", maxKey); // debug
 
 };
 
@@ -107,12 +116,6 @@ async function preparePage(model, detector) {
 async function determineLanguage(group, detector){
   const results = await detector.detect(group[0].innerText)
   return results[0].detectedLanguage
-}
-
-
-
-function isList(node){
-  return ["li", "ul", "dl", "ol"].includes(node.tagName.toLowerCase())
 }
 
 
@@ -196,7 +199,7 @@ function groupTextBlocks(textBlocks, minChars) {
 
 
 
-function addGroupFrame(group){
+function addGroupFrame(group, language, level){
 
   const wrapper = document.createElement('div');
   wrapper.className = 'group-frame';
@@ -238,7 +241,7 @@ function addGroupFrame(group){
     } else {
       btn.textContent = "↺";
       //dispatch promp processing for the whole group, with streaming
-      await promptByGroup(group);
+      await promptByGroup(group, language, level);
       addRatingButtons(wrapper, group);
     }
 
@@ -247,18 +250,20 @@ function addGroupFrame(group){
 
 
 
-async function promptByGroup(group){
+async function promptByGroup(group, language, level){
   
   const availability = await LanguageModel.availability();
   if (availability==='available'){
-    const session = await LanguageModel.create({outputlanguage: "en"})
+    const session = await LanguageModel.create({outputlanguage: language})
     for (block of group){
       console.log("current block is: ", block)
       let promptText = block.innerHTML;
       promptText = window.turndownService.turndown(promptText);
       console.log("prompt is: ", promptText) // debug
-      let response = await session.promptStreaming(`Translate this paragraph into Spanish.` + 
-        `Keep source formatting and punctuation as is. Respond with just the translation: ${promptText}`)
+      let response = await session.promptStreaming(`Adapt this text written in language "${language}" so that a student studying language "${language}"` + 
+        `at a level of ${level.fraction} on a scale where 0 is ${level.lower} and 1 is ${level.upper}` + 
+        `could understand it. The response should not be longer than the prompt.` +
+        `Keep source formatting and punctuation as is. Respond with just the adapatation: ${promptText}`)
         
         
         const renderer = smd.default_renderer(block);
@@ -313,6 +318,26 @@ function removeRatingButtons(wrapper){
   wrapper.style.height = '';
   wrapper.querySelectorAll('.easy-rate-button, .hard-rate-button')
     .forEach(btn => btn.remove());
+}
+
+
+
+function isList(node){
+  return ["li", "ul", "dl", "ol"].includes(node.tagName.toLowerCase())
+}
+
+
+
+function getCEFR(level){
+  let lower = Math.floor(level);
+  let upper = Math.ceil(level);
+  const fraction = level - lower;
+
+  const CEFR = {1: "A1", 2: "A2", 3: "B1", 4: "B2", 5: "C1", 6: "C2"};
+  lower = CEFR[lower]
+  upper = CEFR[upper]
+
+  return { lower, upper, fraction };
 }
 
 
