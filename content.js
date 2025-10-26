@@ -276,7 +276,10 @@ async function promptByGroup(group, language, level){
         could understand it. Simplify or omit details that would be too complex for that level.
 
         Keep the original formatting and punctuation.
-        if the text is only one sentence, keep it as one sentence.
+        Do not change people's quotes.
+        Keep text length roughly the same.
+        Try to avoid repetition.
+
         Respond with only the rewritten text - no explanations or comments.
 
         Here is the text to adapt:
@@ -320,12 +323,31 @@ function addRatingButtons(wrapper, group){
   const easyRateBtn = document.createElement('button');
   easyRateBtn.className = 'easy-rate-button rate-button';
   easyRateBtn.textContent = 'Easy';
-  group[group.length - 1].insertAdjacentElement('afterend', easyRateBtn);
+  wrapper.lastChild.insertAdjacentElement('afterend', easyRateBtn);
+  // group[group.length - 1].insertAdjacentElement('afterend', easyRateBtn); // obsolete?
+  // easyRateBtn.addEventListener('click', () => {
+  //   removeRatingButtons(wrapper)
+  // })
   
   const hardRateBtn = document.createElement('button');
   hardRateBtn.className = 'hard-rate-button rate-button';
   hardRateBtn.textContent = 'Hard';
-  group[group.length - 1].insertAdjacentElement('afterend', hardRateBtn);
+  wrapper.lastChild.insertAdjacentElement('afterend', hardRateBtn);
+  // group[group.length - 1].insertAdjacentElement('afterend', hardRateBtn); // obsolete?
+
+
+  easyRateBtn.addEventListener('click', () => {
+    // removeRatingButtons(wrapper)
+    const floater = document.createElement("div");
+    floater.className = "animated-text";
+    floater.textContent = `+${Math.round(Math.log(wrapper.innerText.length))} points!`;
+    easyRateBtn.appendChild(floater);
+    easyRateBtn.classList.add("fade-out");
+    setTimeout(() => {
+      easyRateBtn.remove();
+    }, 1000);
+
+  });
 
 }
 
