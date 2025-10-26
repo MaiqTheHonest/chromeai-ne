@@ -11,7 +11,7 @@
     "matches": ["<all_urls>"],
     "js": ["smd.js", "turndown.js", "marked.js", "content.js"],
     "css": ["styles.css"],
-    "run_at": "document_start"
+    "run_at": "document_idle"
   }],
   "permissions": ["storage"]
 }

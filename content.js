@@ -122,7 +122,7 @@ async function determineLanguage(group, detector){
 
 
 function getTextBlocks(article){
-  const candidates = article.querySelectorAll('p, div, li, ul, dl, ol, header, h1, h2, h3, section, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
+  const candidates = article.querySelectorAll('p, div, li, ul, dl, ol, h1, h2, h3, section, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
   let candidatesArray = Array.from(candidates);
 
   // keep elements with own (non-child) text, paragraphs, or lists
@@ -134,8 +134,9 @@ function getTextBlocks(article){
     }
   });
   // keep only the lowest-level text elements (drop elements containing already selected text elements)
-  candidatesArray = candidatesArray.filter(el => !candidatesArray.some(p => p !== el && el.contains(p) 
-  && getTopLevelText(el).length < 20 && el.parentNode));
+  candidatesArray = candidatesArray.filter(el => !candidatesArray.some(p => p !== el 
+    && el.contains(p) 
+    && getTopLevelText(el).length < 20));
   // keep only the text nodes that are not part of selected lists (i.e. keep only standalone text nodes)
   // candidatesArray = candidatesArray.filter(el => !candidatesArray.some(p => p !== el && p.contains(el) && !isList(p)));
 
@@ -216,6 +217,7 @@ function addGroupFrame(group, language, level){
 
   topMostBlock.parentNode?.insertBefore(wrapper, topMostBlock);
 
+
   group.forEach(block => {
     wrapper.appendChild(block);
     wrapper.style.minHeight = wrapper.offsetHeight + "px"; // prevent frame shrinking
@@ -265,11 +267,21 @@ async function promptByGroup(group, language, level){
       let promptText = block.innerHTML;
       promptText = window.turndownService.turndown(promptText);
       console.log("prompt is: ", promptText) // debug
-      let response = await session.promptStreaming(`Adapt this text written in language "${language}" so that a student studying language "${language}"` + 
-        `at a level of ${level.fraction} on a scale where 0 is ${level.lower} and 1 is ${level.upper}` + 
-        `could understand it. The response should not be longer than the prompt.` +
-        `Keep source formatting and punctuation as is. Respond with just the adapatation: ${promptText}`)
-        
+
+      let response = await session.promptStreaming(`
+        The following text is written in the language with language code "${language}".
+
+        Rewrite it in the same language so that a language learner at level ${level.fraction} 
+        (on a scale where 0 means ${level.lower} and 1 means ${level.upper}) 
+        could understand it. Simplify or omit details that would be too complex for that level.
+
+        Keep the original formatting and punctuation.
+        if the text is only one sentence, keep it as one sentence.
+        Respond with only the rewritten text - no explanations or comments.
+
+        Here is the text to adapt:
+        ${promptText}
+        `)
         
         const renderer = smd.default_renderer(block);
         const parser = smd.parser(renderer);
