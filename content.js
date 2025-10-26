@@ -3,7 +3,6 @@
 
 (async () => {
   console.log("main run")
-
   const toggleStatus = await chrome.storage.local.get('enabled') // not sure why it takes time to access local storage but mkay
   if (!toggleStatus.enabled) return // i.e. do nothing for this run
   
@@ -25,7 +24,9 @@
       });
     },
   });
+
   preparePage(model, detector);
+  
 })();
 
 
@@ -121,7 +122,7 @@ async function determineLanguage(group, detector){
 
 
 function getTextBlocks(article){
-  const candidates = article.querySelectorAll('p, div, li, ul, dl, ol, h1, h2, h3, section, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
+  const candidates = article.querySelectorAll('p, div, li, ul, dl, ol, header, h1, h2, h3, section, [data-component*="text"], [class*="text"], [class*="para"], [class*="body"]');
   let candidatesArray = Array.from(candidates);
 
   // keep elements with own (non-child) text, paragraphs, or lists
@@ -133,7 +134,8 @@ function getTextBlocks(article){
     }
   });
   // keep only the lowest-level text elements (drop elements containing already selected text elements)
-  candidatesArray = candidatesArray.filter(el => !candidatesArray.some(p => p !== el && el.contains(p) && getTopLevelText(el).length < 20));
+  candidatesArray = candidatesArray.filter(el => !candidatesArray.some(p => p !== el && el.contains(p) 
+  && getTopLevelText(el).length < 20 && el.parentNode));
   // keep only the text nodes that are not part of selected lists (i.e. keep only standalone text nodes)
   // candidatesArray = candidatesArray.filter(el => !candidatesArray.some(p => p !== el && p.contains(el) && !isList(p)));
 
@@ -145,7 +147,6 @@ function getTextBlocks(article){
     if (style.display === 'none' || 
       style.visibility === 'hidden' ||
       style.opacity === "0" ||
-      style.clip !== "auto" ||
       style.clipPath !== "none") return false; // invisible
 
 
@@ -160,6 +161,8 @@ function getTextBlocks(article){
     return true;
     
   });
+
+  // textBlocks.forEach(block => console.log(block)); // debug
   return textBlocks
 }
 
@@ -206,11 +209,13 @@ function addGroupFrame(group, language, level){
   wrapper.style.position = 'relative';
   
   const topMostBlock = group[0];
-  
   // do not create frame if any parent already has a frame (to avoid frame nesting)
   if (topMostBlock.closest(".group-frame")) return;
   
+  console.log(topMostBlock)
+
   topMostBlock.parentNode?.insertBefore(wrapper, topMostBlock);
+
   group.forEach(block => {
     wrapper.appendChild(block);
     wrapper.style.minHeight = wrapper.offsetHeight + "px"; // prevent frame shrinking
