@@ -64,7 +64,7 @@ async function preparePage(model, detector) {
   let languageGuessCounts = {"en": 1}; // defaults to english if not guesses
 
   // debug
-  // console.log("Located main text body: ", allArticles);
+  console.log("Located main text body: ", allArticles);
   if (!allArticles) return; // quit if nothing processable found on page
 
 
@@ -73,7 +73,7 @@ async function preparePage(model, detector) {
     let textBlocks = getTextBlocks(article); // get smaller blocks within + divs longer than x chars
     for (block of textBlocks){
       //debug
-      // console.log(block.innerText)
+      console.log(block.innerText)
     }
     
     let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=700);
@@ -83,7 +83,7 @@ async function preparePage(model, detector) {
       if (group[0].innerText.length > 100) {
         const language = await determineLanguage(group, detector);
         languageGuessCounts[language] = (languageGuessCounts[language] || 0) + 1;
-        // console.log("language of this block is: ", language); // debug
+        console.log("language of this block is: ", language); // debug
       }
     };
       // find most common language guess
