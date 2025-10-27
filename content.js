@@ -249,7 +249,7 @@ function addGroupFrame(group, language, level){
       btn.textContent = "↺";
       //dispatch promp processing for the whole group, with streaming
       await promptByGroup(group, language, level);
-      addRatingButtons(wrapper, group);
+      addRatingButtons(wrapper, group, language, level);
     }
 
   });
@@ -273,14 +273,18 @@ async function promptByGroup(group, language, level){
 
         Rewrite it in the same language so that a language learner at level ${level.fraction} 
         (on a scale where 0 means ${level.lower} and 1 means ${level.upper}) 
-        could understand it. Simplify or omit details that would be too complex for that level.
+        could fully understand it.
 
-        Keep the original formatting and punctuation.
-        Do not change people's quotes.
-        Keep text length roughly the same.
-        Try to avoid repetition.
+        Important:
+        - Do **not** change the factual meaning, claims, or relationships in the text.
+        - You may only simplify **vocabulary**, **sentence structure**, or **grammar** — never the content itself.
+        - Keep all information, details, and tone identical in meaning.
+        - If a concept is too complex, **rephrase** it in simpler words instead of removing or changing it.
+        - Preserve all quotes exactly as written.
+        - Maintain the same formatting, punctuation, and approximate length.
+        - Avoid unnecessary repetition.
 
-        Respond with only the rewritten text - no explanations or comments.
+        Respond with **only** the rewritten text - no explanations or comments.
 
         Here is the text to adapt:
         ${promptText}
@@ -318,13 +322,12 @@ function getTopLevelText(el) {
 
 
 
-function addRatingButtons(wrapper, group){
+async function addRatingButtons(wrapper, group, language, level){
   wrapper.style.height = wrapper.offsetHeight + 28 + "px"
   const easyRateBtn = document.createElement('button');
   easyRateBtn.className = 'easy-rate-button rate-button';
   easyRateBtn.textContent = 'Easy';
   wrapper.lastChild.insertAdjacentElement('afterend', easyRateBtn);
-  // group[group.length - 1].insertAdjacentElement('afterend', easyRateBtn); // obsolete?
   // easyRateBtn.addEventListener('click', () => {
   //   removeRatingButtons(wrapper)
   // })
@@ -333,22 +336,42 @@ function addRatingButtons(wrapper, group){
   hardRateBtn.className = 'hard-rate-button rate-button';
   hardRateBtn.textContent = 'Hard';
   wrapper.lastChild.insertAdjacentElement('afterend', hardRateBtn);
-  // group[group.length - 1].insertAdjacentElement('afterend', hardRateBtn); // obsolete?
 
+  hardRateBtn.addEventListener('click', async () => {
+    const adjustedLevel = {
+      lower: Math.max(level.lower - 1, 0),
+      upper: Math.max(level.upper - 1, 0),
+      fraction: level.fraction
+    };
+
+    const floater = document.createElement("div");
+    floater.className = "animated-text";
+    floater.style.color = "#fd6666";
+    floater.textContent = "Try again";
+    hardRateBtn.appendChild(floater)
+    easyRateBtn.classList.add("fade-out");
+    hardRateBtn.classList.add("fade-out");
+    setTimeout(async () => {
+      await promptByGroup(group, language, adjustedLevel)
+      removeRatingButtons(wrapper)
+      addRatingButtons(wrapper, group, language, level);
+    }, 750);
+  }
+  )
 
   easyRateBtn.addEventListener('click', () => {
     // removeRatingButtons(wrapper)
     const floater = document.createElement("div");
     floater.className = "animated-text";
+    floater.style.color = "#269f5c"
     floater.textContent = `+${Math.round(Math.log(wrapper.innerText.length))} points!`;
     easyRateBtn.appendChild(floater);
     easyRateBtn.classList.add("fade-out");
+    hardRateBtn.classList.add("fade-out");
     setTimeout(() => {
-      easyRateBtn.remove();
-    }, 1000);
-
+      removeRatingButtons(wrapper)
+    }, 750);
   });
-
 }
 
 
