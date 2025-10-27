@@ -158,7 +158,6 @@ function getTextBlocks(article){
     if (text.length < 20) return false; // too short
     if (text.split(' ').length < 3) return false; // not enough words
     if (text.length / html.length < 0.2) return false; // is mostly markup / meta / hyperlink
-    // console.log(`UNFILTERED ELEMENT: \n${el.outerHTML}\nfull text = ${el.innerText}\nlinkText.length = ${linkText.length}\ntext.length = ${text.length}`) // debug
     return true;
     
   });
@@ -328,16 +327,14 @@ async function addRatingButtons(wrapper, group, language, level){
   easyRateBtn.className = 'easy-rate-button rate-button';
   easyRateBtn.textContent = 'Easy';
   wrapper.lastChild.insertAdjacentElement('afterend', easyRateBtn);
-  // easyRateBtn.addEventListener('click', () => {
-  //   removeRatingButtons(wrapper)
-  // })
-  
+
   const hardRateBtn = document.createElement('button');
   hardRateBtn.className = 'hard-rate-button rate-button';
   hardRateBtn.textContent = 'Hard';
   wrapper.lastChild.insertAdjacentElement('afterend', hardRateBtn);
 
   hardRateBtn.addEventListener('click', async () => {
+    updateLocalLevel(by=-5, language=language);
     const adjustedLevel = {
       lower: Math.max(level.lower - 1, 0),
       upper: Math.max(level.upper - 1, 0),
@@ -360,7 +357,7 @@ async function addRatingButtons(wrapper, group, language, level){
   )
 
   easyRateBtn.addEventListener('click', () => {
-    // removeRatingButtons(wrapper)
+    updateLocalLevel(by=5, language=language);
     const floater = document.createElement("div");
     floater.className = "animated-text";
     floater.style.color = "#269f5c"
@@ -384,12 +381,6 @@ function removeRatingButtons(wrapper){
 
 
 
-function isList(node){
-  return ["li", "ul", "dl", "ol"].includes(node.tagName.toLowerCase())
-}
-
-
-
 function getCEFR(level){
   let lower = Math.floor(level);
   let upper = Math.ceil(level);
@@ -402,6 +393,24 @@ function getCEFR(level){
   return { lower, upper, fraction };
 }
 
+
+
+async function updateLocalLevel(by, language){
+  console.log("changed language level by: ", by); // debug
+  const result = await chrome.storage.local.get("levels");
+  const storedLevels = result.levels || {};
+  let currentLevel = storedLevels[language] || 2.5;
+  const newLevel = currentLevel + by/100;
+  storedLevels[language] = newLevel;
+  await chrome.storage.local.set({"levels": storedLevels});
+  
+}
+
+
+
+function isList(node){
+  return ["li", "ul", "dl", "ol"].includes(node.tagName.toLowerCase())
+}
 
 
 function unitTest(){
