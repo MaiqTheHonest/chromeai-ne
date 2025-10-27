@@ -74,7 +74,7 @@ async function preparePage(model, detector) {
     let textBlocks = getTextBlocks(article); // get smaller blocks within + divs longer than x chars
     for (block of textBlocks){
       //debug
-      console.log(block.innerText)
+      // console.log(block.innerText)
     }
     
     let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=700);
@@ -129,7 +129,7 @@ function getTextBlocks(article){
   candidatesArray = candidatesArray.filter(el => {
     if (getTopLevelText(el).length >= 20 || el.innerText.length > 20 || isList(el)) {return true;} 
     else {
-      console.log("removed element: ", el);
+      // console.log("removed element: ", el); // debug
       return false;
     }
   });
@@ -229,7 +229,7 @@ function addGroupFrame(group, language, level){
   btn.textContent = '네?';
 
   topMostBlock.insertAdjacentElement('beforebegin', btn);
-  console.log("buttons added") // debug
+  // console.log("buttons added") // debug
 
   // store original text content in case it needs to be reverted to
   let originalBlocks = group.map(b => b.textContent);
@@ -262,7 +262,7 @@ async function promptByGroup(group, language, level){
   if (availability==='available'){
     const session = await LanguageModel.create({outputlanguage: language})
     for (block of group){
-      console.log("current block is: ", block)
+      // console.log("current block is: ", block) // debug
       let promptText = block.innerHTML;
       promptText = window.turndownService.turndown(promptText);
       console.log("prompt is: ", promptText) // debug
@@ -334,7 +334,7 @@ async function addRatingButtons(wrapper, group, language, level){
   wrapper.lastChild.insertAdjacentElement('afterend', hardRateBtn);
 
   hardRateBtn.addEventListener('click', async () => {
-    updateLocalLevel(by=-5, language=language);
+    updateLocalLevelBy(points=-5, language=language);
     const adjustedLevel = {
       lower: Math.max(level.lower - 1, 0),
       upper: Math.max(level.upper - 1, 0),
@@ -357,7 +357,7 @@ async function addRatingButtons(wrapper, group, language, level){
   )
 
   easyRateBtn.addEventListener('click', () => {
-    updateLocalLevel(by=5, language=language);
+    updateLocalLevelBy(points=5, language=language);
     const floater = document.createElement("div");
     floater.className = "animated-text";
     floater.style.color = "#269f5c"
@@ -395,15 +395,36 @@ function getCEFR(level){
 
 
 
-async function updateLocalLevel(by, language){
-  console.log("changed language level by: ", by); // debug
-  const result = await chrome.storage.local.get("levels");
-  const storedLevels = result.levels || {};
-  let currentLevel = storedLevels[language] || 2.5;
-  const newLevel = currentLevel + by/100;
-  storedLevels[language] = newLevel;
-  await chrome.storage.local.set({"levels": storedLevels});
-  
+async function updateLocalLevelBy(points, language){
+
+  // update language level
+  console.log("changed language level by: ", points); // debug
+  chrome.storage.local.get("levels", (data) => {
+    const storedLevels = data.levels || {};
+    let currentLevel = storedLevels[language] || 2.5;
+    const newLevel = currentLevel + points/100;
+    storedLevels[language] = newLevel;
+    chrome.storage.local.set({"levels": storedLevels});
+  });
+
+  // update points history
+  const today = getTodayDate();
+  chrome.storage.local.get(["pointsByDay"], (data) => {
+    const pointsByDay = data.pointsByDay || {};
+    pointsByDay[today] = (pointsByDay[today] || 0) + points;
+    chrome.storage.local.set({ pointsByDay });
+    console.log("points earned today: ", pointsByDay[today]); // debug
+  });
+
+
+}
+
+
+
+
+// abstract helper functions
+function getTodayDate() {
+  return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 }
 
 
@@ -411,6 +432,7 @@ async function updateLocalLevel(by, language){
 function isList(node){
   return ["li", "ul", "dl", "ol"].includes(node.tagName.toLowerCase())
 }
+
 
 
 function unitTest(){
