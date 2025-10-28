@@ -3,11 +3,17 @@
 
 (async () => {
   console.log("main run")
-  const toggleStatus = await chrome.storage.local.get('enabled') // not sure why it takes time to access local storage but mkay
+  const toggleStatus = await chrome.storage.local.get('enabled') // not sure why local storage is under promise but mkay
   if (!toggleStatus.enabled) return // i.e. do nothing for this run
   
+  const timeState = await chrome.storage.local.get('timeState');
+  let [lastLearningRate, t] = [(timeState.timeState.learningRate || 1), (timeState.timeState.t || 0)];
+  const alpha = 0.5;
+  lastLearningRate = lastLearningRate * (1 / (1 + t*alpha))
+  t += 1;
+  // console.log("t: ", t); // debug
+  chrome.storage.local.set({'timeState': {learningRate: lastLearningRate, t: t}})
   window.turndownService = new TurndownService();
-  unitTest(); // debug
   
   let model = await LanguageModel.create({outputlanguage:"en",
     monitor(m) {
@@ -25,13 +31,13 @@
     },
   });
 
-  preparePage(model, detector);
+  preparePage(model, detector, lastLearningRate);
   
 })();
 
 
 
-async function preparePage(model, detector) {
+async function preparePage(model, detector, lastLearningRate) {
   
   const selectors = [
     'main',
@@ -68,7 +74,6 @@ async function preparePage(model, detector) {
   console.log("Located main text body: ", allArticles);
   if (!allArticles) return; // quit if nothing processable found on page
 
-
   for (article of allArticles) {
 
     let textBlocks = getTextBlocks(article); // get smaller blocks within + divs longer than x chars
@@ -102,11 +107,9 @@ async function preparePage(model, detector) {
     let storedLevels = result.levels || {}; // default to no levels
     let level = storedLevels[language] || 2.5; // default to medium level
     level = getCEFR(level);
-    // storedLevels[language] = level;
-    // chrome.storage.local.set({ levels: storedLevels})
 
     for (let group of groupedTextBlocks) {
-      addGroupFrame(group, language, level)
+      addGroupFrame(group, language, level, lastLearningRate)
     };  
   };
 
@@ -161,7 +164,6 @@ function getTextBlocks(article){
     return true;
     
   });
-
   // textBlocks.forEach(block => console.log(block)); // debug
   return textBlocks
 }
@@ -202,7 +204,7 @@ function groupTextBlocks(textBlocks, minChars) {
 
 
 
-function addGroupFrame(group, language, level){
+function addGroupFrame(group, language, level, lastLearningRate){
 
   const wrapper = document.createElement('div');
   wrapper.className = 'group-frame';
@@ -212,7 +214,7 @@ function addGroupFrame(group, language, level){
   // do not create frame if any parent already has a frame (to avoid frame nesting)
   if (topMostBlock.closest(".group-frame")) return;
   
-  console.log(topMostBlock)
+  // console.log(topMostBlock) // debug
 
   topMostBlock.parentNode?.insertBefore(wrapper, topMostBlock);
 
@@ -248,7 +250,7 @@ function addGroupFrame(group, language, level){
       btn.textContent = "↺";
       //dispatch promp processing for the whole group, with streaming
       await promptByGroup(group, language, level);
-      addRatingButtons(wrapper, group, language, level);
+      addRatingButtons(wrapper, group, language, level, lastLearningRate);
     }
 
   });
@@ -298,7 +300,9 @@ async function promptByGroup(group, language, level){
             firstChunk = false;  
             block.innerHTML = '';
           };
+
           smd.parser_write(parser, chunk)
+          
         
       };
       // end of streaming
@@ -307,6 +311,7 @@ async function promptByGroup(group, language, level){
     }
   }
 }
+
 
 
 function getTopLevelText(el) {
@@ -321,7 +326,7 @@ function getTopLevelText(el) {
 
 
 
-async function addRatingButtons(wrapper, group, language, level){
+async function addRatingButtons(wrapper, group, language, level, lastLearningRate){
   wrapper.style.height = wrapper.offsetHeight + 28 + "px"
   const easyRateBtn = document.createElement('button');
   easyRateBtn.className = 'easy-rate-button rate-button';
@@ -334,7 +339,7 @@ async function addRatingButtons(wrapper, group, language, level){
   wrapper.lastChild.insertAdjacentElement('afterend', hardRateBtn);
 
   hardRateBtn.addEventListener('click', async () => {
-    updateLocalLevelBy(points=-5, language=language);
+    updateLocalLevelBy(points=-5, language=language, lastLearningRate);
     const adjustedLevel = {
       lower: Math.max(level.lower - 1, 0),
       upper: Math.max(level.upper - 1, 0),
@@ -357,7 +362,7 @@ async function addRatingButtons(wrapper, group, language, level){
   )
 
   easyRateBtn.addEventListener('click', () => {
-    updateLocalLevelBy(points=5, language=language);
+    updateLocalLevelBy(points=5, language=language, lastLearningRate);
     const floater = document.createElement("div");
     floater.className = "animated-text";
     floater.style.color = "#269f5c"
@@ -395,16 +400,16 @@ function getCEFR(level){
 
 
 
-async function updateLocalLevelBy(points, language){
+async function updateLocalLevelBy(points, language, lastLearningRate){
 
   // update language level
-  console.log("changed language level by: ", points); // debug
   chrome.storage.local.get("levels", (data) => {
     const storedLevels = data.levels || {};
     let currentLevel = storedLevels[language] || 2.5;
-    const newLevel = currentLevel + points/100;
+    const newLevel = currentLevel + lastLearningRate*points/100;
     storedLevels[language] = newLevel;
     chrome.storage.local.set({"levels": storedLevels});
+    console.log("changed language level by: ", newLevel-currentLevel); // debug
   });
 
   // update points history
@@ -415,7 +420,6 @@ async function updateLocalLevelBy(points, language){
     chrome.storage.local.set({ pointsByDay });
     console.log("points earned today: ", pointsByDay[today]); // debug
   });
-
 
 }
 
