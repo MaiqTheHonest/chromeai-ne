@@ -69,6 +69,7 @@ async function preparePage(model, detector, lastLearningRate) {
   }
 
   let languageGuessCounts = {"en": 1}; // defaults to english if not guesses
+  let language = null;
 
   // debug
   console.log("Located main text body: ", allArticles);
@@ -87,7 +88,6 @@ async function preparePage(model, detector, lastLearningRate) {
     let lang = document.documentElement.lang;
     if (!lang){
       // guess the language
-      let language = null;
       for (let group of groupedTextBlocks){
         if (group[0].innerText.length > 100) {
           const language = await determineLanguage(group, detector);

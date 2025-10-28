@@ -71,7 +71,8 @@
 
 function calculateStreak(points){
   let count = 0;
-  for (number of points.reverse()){
+  const reversed = points.slice().reverse();
+  for (number of reversed){
     if (number === 0) break;
     count += 1 
     }
