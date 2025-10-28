@@ -84,24 +84,27 @@ async function preparePage(model, detector, lastLearningRate) {
     
     let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=700);
     
-    // guess the language
-    for (let group of groupedTextBlocks){
-      if (group[0].innerText.length > 100) {
-        const language = await determineLanguage(group, detector);
-        languageGuessCounts[language] = (languageGuessCounts[language] || 0) + 1;
-        console.log("language of this block is: ", language); // debug
-      }
-    };
-      // find most common language guess
-    let language = null;
-    let maxVal = -1;
-    for (const [key, value] of Object.entries(languageGuessCounts)) {
-      if (value > maxVal) {
-        maxVal = value;
-        language = key;
-      }
-    };
-    console.log("Page language: ", language); // debug
+    let lang = document.documentElement.lang;
+    if (!lang){
+      // guess the language
+      let language = null;
+      for (let group of groupedTextBlocks){
+        if (group[0].innerText.length > 100) {
+          const language = await determineLanguage(group, detector);
+          languageGuessCounts[language] = (languageGuessCounts[language] || 0) + 1;
+          console.log("language of this block is: ", language); // debug
+        }
+      };
+        // find most common language guess
+      let maxVal = -1;
+      for (const [key, value] of Object.entries(languageGuessCounts)) {
+        if (value > maxVal) {
+          maxVal = value;
+          language = key;
+        }
+      };
+      console.log("Page language: ", language); // debug
+    }
 
     const result = await chrome.storage.local.get("levels");
     let storedLevels = result.levels || {}; // default to no levels
