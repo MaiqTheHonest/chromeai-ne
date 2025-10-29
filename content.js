@@ -108,6 +108,7 @@ async function preparePage(model, detector, lastLearningRate) {
       };
       console.log("Page language: ", language); // debug
     }
+    chrome.storage.local.set({"currentPageLanguage": language}); // to communicate with popup.js
 
     const data = await chrome.storage.local.get("exclusions");
     let exclusions = data.exclusions || []; // default to no exclusions
@@ -123,7 +124,6 @@ async function preparePage(model, detector, lastLearningRate) {
     };  
   };
 
-  chrome.storage.local.set({"currentPageLanguage": language}); // to communicate with popup.js
 
 };
 

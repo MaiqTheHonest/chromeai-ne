@@ -172,10 +172,12 @@
 
 .extension-popup  {
   min-width: 320px;
-  min-height: 500px;
+  min-height: 400px;
+  max-height:540px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  position: relative;
   /* gap: 0.75rem; */
 }
 
@@ -211,12 +213,15 @@ hr {
 .text-area {
   display: flex;
   flex-direction: column;
-  gap: 4px
+  padding: 4px;
+  gap: 4px;
+  background-color: #ededed;
+  border: 2px solid #b9b9b9;
 }
 
 .text-box {
   padding: 4px;
-  border: 2px dashed #000000;
+  /* border: 2px dashed #eee; */
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
@@ -225,7 +230,9 @@ hr {
 
 .text-box p {
   margin: 0px;
-  font-size: 12px;
+  font-size: 13px;
+  white-space: nowrap; 
+  display: inline-flex;
 }
 
 /* From Uiverse.io by SV-jtv */ 
@@ -233,11 +240,13 @@ hr {
   --secondary-container: #415863;
   --primary: #67c0ec;
   font-size: 10px;
-  position: relative;
-  display: inline-block;
+  position: absolute;
+  display: inline-flex;
   width: 3.7em;
   height: 1.8em;
-  right: 10%;
+  right: 15px;
+  line-height: 1;
+  /* float: right */
 }
 
 .switch .input {

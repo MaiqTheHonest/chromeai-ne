@@ -5,7 +5,7 @@
   </head>
   <body class="extension-popup">
 
-    <img id="watermark" src="icons/watermark.png" width = 64px style="z-index: 1000; opacity: 0.1; position: absolute; right:0px; top:0px"/>
+    <img id="watermark" src="icons/watermark.png" width = 64px style="z-index: 1000; opacity: 0.05; position: absolute; right:0px; top:0px;"/>
 
     <div class="chart">
       <canvas id="myChart"></canvas>
@@ -30,7 +30,7 @@
         </label>
       </div>
       
-      <div class="text-box">
+      <div class="text-box" id="exclude-switch">
         <p>On/Off:</p>
         <label class="switch">
           <input id="exclude-toggle" type="checkbox" class="input">
@@ -39,17 +39,23 @@
         </label>
       </div>
 
-      <div class="text-box">
-        <p>Language levels:</p>
+      <hr />
+
+      <div class="text-box" id="exclusions">
+        <p>Excluded languages:</p>
 
       </div>    
   
       <div class="text-box">
         <p>Learning rate:</p>
       </div>
-
+      
     </main>
-    
+
+    <span style="opacity:0.3; bottom: 1px; right:4px; width: fit-content; position: absolute">
+      &#169 Robert Demka 2025
+    </span>
+
     <script src="popup.js"></script>
   </body>
 </html>

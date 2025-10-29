@@ -15,7 +15,10 @@
   });
   
   
-  const excludeToggle = document.getElementById("exclude-toggle");
+  const secondSwitch = document.getElementById("exclude-switch");
+  const excludeToggle = secondSwitch.querySelector("input");
+  const excludeText = secondSwitch.querySelector("p");
+  const exclusionsNode = document.getElementById("exclusions").querySelector("p");
 
   chrome.storage.local.get(['exclusions', 'currentPageLanguage'], ({ exclusions = [], currentPageLanguage }) => {
     if (!currentPageLanguage) {
@@ -41,8 +44,9 @@
       });
       exclusions = updatedExclusions;
     });
+    excludeText.textContent = `Do not adapt this page's language (${currentPageLanguage}): `;
+    exclusionsNode.textContent = `Excluded languages:  [${exclusions}]`
   });
-
   
 
   
