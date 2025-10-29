@@ -4,29 +4,41 @@
     <script src="chart.umd.min.js"></script>
   </head>
   <body class="extension-popup">
-    
+
+    <img id="watermark" src="icons/watermark.png" width = 64px style="z-index: 1000; opacity: 0.1; position: absolute; right:0px; top:0px"/>
+
     <div class="chart">
       <canvas id="myChart"></canvas>
     </div>
     
-    
+    <hr />
 
+    <h1 class="streak-header" id="streak">
+      Current streak: 0 days
+    </h1>
+
+    <hr />
 
     <main class="text-area">
 
       <div class="text-box">
         <p>On/Off:</p>
-
-
         <label class="switch">
           <input id="main-toggle" type="checkbox" class="input">
           <span class="slider">
           </span>
         </label>
-
-
       </div>
-  
+      
+      <div class="text-box">
+        <p>On/Off:</p>
+        <label class="switch">
+          <input id="exclude-toggle" type="checkbox" class="input">
+          <span class="slider">
+          </span>
+        </label>
+      </div>
+
       <div class="text-box">
         <p>Language levels:</p>
 
@@ -34,10 +46,6 @@
   
       <div class="text-box">
         <p>Learning rate:</p>
-      </div>
-
-      <div class="text-box", id="streak">
-        <p>Current streak:</p>
       </div>
 
     </main>

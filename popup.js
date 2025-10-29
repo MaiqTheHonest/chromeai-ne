@@ -1,20 +1,50 @@
+
 (async () => {
   
-  const toggle = document.getElementById('main-toggle');
+  const mainToggle = document.getElementById('main-toggle');
   
-  
-  // extension toggle 
+  // extension mainToggle 
   chrome.storage.local.get('enabled', data => {
-    toggle.checked = !!data.enabled; // force to boolean
+    mainToggle.checked = !!data.enabled; // force to boolean
   });
   // fires when toggled
-  toggle.addEventListener('change', () => {
-    const enabled = toggle.checked;
+  mainToggle.addEventListener('change', () => {
+    const enabled = mainToggle.checked;
     console.log('Toggled to:', enabled);
     chrome.storage.local.set({ enabled });
   });
   
   
+  const excludeToggle = document.getElementById("exclude-toggle");
+
+  chrome.storage.local.get(['exclusions', 'currentPageLanguage'], ({ exclusions = [], currentPageLanguage }) => {
+    if (!currentPageLanguage) {
+      console.log("no lang found");
+      return
+    };
+    excludeToggle.checked = exclusions.includes(currentPageLanguage);
+
+    excludeToggle.addEventListener('change', () => {
+      let updatedExclusions = [...exclusions];
+
+      // if toggled ON
+      if (excludeToggle.checked) {
+        if (!updatedExclusions.includes(currentPageLanguage)) {
+          updatedExclusions.push(currentPageLanguage);
+        }
+      } else { // if toggled OFF
+        updatedExclusions = updatedExclusions.filter(lang => lang !== currentPageLanguage);
+      }
+      // store exclusions back
+      chrome.storage.local.set({ exclusions: updatedExclusions }, () => {
+        console.log('Exclusions updated:', updatedExclusions);
+      });
+      exclusions = updatedExclusions;
+    });
+  });
+
+  
+
   
   // chart
   const today = new Date().getDay() - 1;
@@ -32,7 +62,9 @@
   const nZ = Math.max(...points) * 0.01; // value that should be zero but looks nicer if its about 1% of the tallest bar
 
   const streakNode = document.getElementById("streak")
-  streakNode.textContent = `current streak: ${currentStreak} days`;
+  let suffix = "";
+  if (currentStreak > 0) suffix = "\u{1F525}";
+  streakNode.textContent = ` current streak:  ${currentStreak} days ${suffix}`;
   const barColor1 = "#63c991ff";
   const barColor2 = "#ffa040be";
 
@@ -52,7 +84,14 @@
       plugins: {
         legend: {
             display: false,
-        }
+        },
+        title: {
+          text: "      points earned",
+          align: 'center',
+          padding: 4,
+          display: true,
+          color: "#949494ff"
+        },
       },
       maintainAspectRatio: false,
       events: ['mousemove', 'mouseout', 'click', 'touchstart', 'touchmove'],
@@ -90,7 +129,7 @@ function calculateStreak(points){
 
 
 
-// document.getElementById("main-toggle").addEventListener("click", async () => {
+// document.getElementById("main-mainToggle").addEventListener("click", async () => {
 
 //   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   

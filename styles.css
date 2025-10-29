@@ -179,12 +179,33 @@
   /* gap: 0.75rem; */
 }
 
+.streak-header {
+  display: block;
+  margin: 2px;
+  line-height: 1;
+  font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  font-weight:100 !important;
+  white-space: nowrap;
+  white-space-collapse: preserve;
+  color: #545454
+}
+
 .chart {
   display: block;
   width: 300px;
   height: 300px;
   box-sizing: border-box;
+  margin-top: 4px;
   margin-bottom: 10px;
+}
+
+hr {
+  border: 0;
+  clear:both;
+  display:block;
+  width: 96%;               
+  background-color:#b3b3b3;
+  height: 1px;
 }
 
 .text-area {

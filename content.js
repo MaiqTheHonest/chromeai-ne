@@ -109,6 +109,10 @@ async function preparePage(model, detector, lastLearningRate) {
       console.log("Page language: ", language); // debug
     }
 
+    const data = await chrome.storage.local.get("exclusions");
+    let exclusions = data.exclusions || []; // default to no exclusions
+    if (exclusions.includes(language)) return;
+
     const result = await chrome.storage.local.get("levels");
     let storedLevels = result.levels || {}; // default to no levels
     let level = storedLevels[language] || 2.5; // default to medium level
@@ -118,6 +122,8 @@ async function preparePage(model, detector, lastLearningRate) {
       addGroupFrame(group, language, level, lastLearningRate)
     };  
   };
+
+  chrome.storage.local.set({"currentPageLanguage": language}); // to communicate with popup.js
 
 };
 
