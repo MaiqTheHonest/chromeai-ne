@@ -1,6 +1,8 @@
 // 네?
 // IIFE change to main later?
 
+let haltParser = false;
+
 (async () => {
   console.log("main run")
   const toggleStatus = await chrome.storage.local.get('enabled') // not sure why local storage is under promise but mkay
@@ -248,6 +250,7 @@ function addGroupFrame(group, language, level, lastLearningRate){
       btn.textContent = "네?";
       group.forEach((block, idx) => block.textContent = originalBlocks[idx]);
       removeRatingButtons(wrapper);
+      haltParser = true;
 
     } else {
       btn.textContent = "↺";
@@ -263,11 +266,16 @@ function addGroupFrame(group, language, level, lastLearningRate){
 
 async function promptByGroup(group, language, level){
   
+  haltParser = false;
   const availability = await LanguageModel.availability();
   if (availability==='available'){
     const session = await LanguageModel.create({outputlanguage: language})
+    console.log("model created"); // debug
+
+    
     for (block of group){
       // console.log("current block is: ", block) // debug
+      if (haltParser) return;
       let promptText = block.innerHTML;
       promptText = window.turndownService.turndown(promptText);
       console.log("prompt is: ", promptText) // debug
@@ -296,14 +304,17 @@ async function promptByGroup(group, language, level){
         
         const renderer = smd.default_renderer(block);
         const parser = smd.parser(renderer);
-        
+        console.log("parser initialized"); // debug
         let firstChunk = true;
         for await (const chunk of response) {
           if (firstChunk) {  
             firstChunk = false;  
             block.innerHTML = '';
           };
-
+          if (haltParser) {
+            smd.parser_end(parser);
+            break;
+          };
           smd.parser_write(parser, chunk)
           
         

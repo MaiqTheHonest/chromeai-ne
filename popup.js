@@ -26,7 +26,7 @@
   const dow = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   console.log(pointsByDay);
   // const points = Object.values(pointsByDay);
-  const points = [25, 20, 47, 65, 34, 72, 80, 70]
+  const points = [25, 20, 47, 65, 34, 72, 80, 62]
   const currentStreak = calculateStreak(points);
 
   const nZ = Math.max(...points) * 0.01; // value that should be zero but looks nicer if its about 1% of the tallest bar
