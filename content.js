@@ -2,6 +2,8 @@
 // IIFE change to main later?
 
 let haltParser = false;
+let language = null;
+
 
 (async () => {
   console.log("main run")
@@ -71,7 +73,6 @@ async function preparePage(model, detector, lastLearningRate) {
   }
 
   let languageGuessCounts = {"en": 1}; // defaults to english if not guesses
-  let language = null;
 
   // debug
   console.log("Located main text body: ", allArticles);
@@ -87,8 +88,8 @@ async function preparePage(model, detector, lastLearningRate) {
     
     let groupedTextBlocks = groupTextBlocks(textBlocks, minChars=700);
     
-    let lang = document.documentElement.lang;
-    if (!lang){
+    language = document.documentElement.lang;
+    if (!language){
       // guess the language
       for (let group of groupedTextBlocks){
         if (group[0].innerText.length > 100) {
@@ -241,8 +242,11 @@ function addGroupFrame(group, language, level, lastLearningRate){
   // store original text content in case it needs to be reverted to
   let originalBlocks = group.map(b => b.textContent);
 
-  btn.addEventListener('click', async () => {
-    
+  btn.addEventListener('click', async (e) => {
+    haltParser = true;
+    e.stopPropagation(); // prevent link clicking
+    e.preventDefault();
+
     btn.classList.toggle('reverter')
     console.log("prompt button clicked") // debug
 
@@ -250,7 +254,6 @@ function addGroupFrame(group, language, level, lastLearningRate){
       btn.textContent = "네?";
       group.forEach((block, idx) => block.textContent = originalBlocks[idx]);
       removeRatingButtons(wrapper);
-      haltParser = true;
 
     } else {
       btn.textContent = "↺";
@@ -289,10 +292,13 @@ async function promptByGroup(group, language, level){
         could fully understand it.
 
         Important:
+        - If a sentence is a question, you **must** keep it a question. Do **not** answer it.
+        - Do **not** answer the following question.
         - Do **not** change the factual meaning, claims, or relationships in the text.
         - You may only simplify **vocabulary**, **sentence structure**, or **grammar** — never the content itself.
         - Keep all information, details, and tone identical in meaning.
         - If a concept is too complex, **rephrase** it in simpler words instead of removing or changing it.
+        - Preserve the approximate original text length.
         - Preserve all quotes exactly as written.
         - Maintain the same formatting, punctuation, and approximate length.
         - Avoid unnecessary repetition.
@@ -315,7 +321,7 @@ async function promptByGroup(group, language, level){
           if (haltParser) {
             smd.parser_end(parser);
             // removeRatingButtons(block.parentNode);
-            break;
+            return true;
           };
           smd.parser_write(parser, chunk)
           
@@ -326,6 +332,7 @@ async function promptByGroup(group, language, level){
       console.log("innertext response is:\n", block.innerText);
     }
   }
+  return false;
 }
 
 
