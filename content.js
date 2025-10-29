@@ -255,10 +255,11 @@ function addGroupFrame(group, language, level, lastLearningRate){
     } else {
       btn.textContent = "↺";
       //dispatch promp processing for the whole group, with streaming
-      await promptByGroup(group, language, level);
-      addRatingButtons(wrapper, group, language, level, lastLearningRate);
-    }
-
+      const interrupted = await promptByGroup(group, language, level);
+      if (!interrupted) {
+        addRatingButtons(wrapper, group, language, level, lastLearningRate);
+      };
+    };
   });
 }
 
@@ -275,7 +276,7 @@ async function promptByGroup(group, language, level){
     
     for (block of group){
       // console.log("current block is: ", block) // debug
-      if (haltParser) return;
+      if (haltParser) return true; // i.e. return that user manually interrupted adaptation
       let promptText = block.innerHTML;
       promptText = window.turndownService.turndown(promptText);
       console.log("prompt is: ", promptText) // debug
@@ -313,6 +314,7 @@ async function promptByGroup(group, language, level){
           };
           if (haltParser) {
             smd.parser_end(parser);
+            // removeRatingButtons(block.parentNode);
             break;
           };
           smd.parser_write(parser, chunk)
