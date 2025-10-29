@@ -33,6 +33,8 @@
 
   const streakNode = document.getElementById("streak")
   streakNode.textContent = `current streak: ${currentStreak} days`;
+  const barColor1 = "#63c991ff";
+  const barColor2 = "#ffa040be";
 
   const ctx = document.getElementById('myChart');
   new Chart(ctx, {
@@ -43,7 +45,7 @@
         data: [points.at(-7) || nZ, points.at(-6) || nZ, 
           points.at(-5) || nZ, points.at(-4) || nZ, points.at(-3) || nZ, points.at(-2) || nZ, points.at(-1) || nZ, nZ],
         borderWidth: 1,
-        backgroundColor: ["#36a2ebbe", "#36a2ebbe", "#36a3ebbe", "#36a2ebbe", "#36a2ebbe", "#36a2ebbe", "#ffa040be"]
+        backgroundColor: [barColor1, barColor1, barColor1, barColor1, barColor1, barColor1, "#ffa040be"]
       }]
     },
     options: {

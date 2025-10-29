@@ -230,38 +230,43 @@ function addGroupFrame(group, language, level, lastLearningRate){
     wrapper.style.minHeight = wrapper.offsetHeight + "px"; // prevent frame shrinking
   });
 
-  // const rect = topMostBlock.getBoundingClientRect();
   const btn = document.createElement('button');
   btn.className = 'group-btn';
-
-  btn.textContent = '네?';
-
   topMostBlock.insertAdjacentElement('beforebegin', btn);
-  // console.log("buttons added") // debug
+
+  // add inner span
+  const symbol = document.createElement("span");
+  btn.appendChild(symbol);
+  symbol.textContent = "네?";
+  
 
   // store original text content in case it needs to be reverted to
   let originalBlocks = group.map(b => b.textContent);
-
+  
   btn.addEventListener('click', async (e) => {
     haltParser = true;
     e.stopPropagation(); // prevent link clicking
     e.preventDefault();
-
+    
     btn.classList.toggle('reverter')
     console.log("prompt button clicked") // debug
-
+    
     if (!btn.classList.contains('reverter')){
-      btn.textContent = "네?";
+      symbol.textContent = "네?";
+      symbol.classList.remove("spinning");
       group.forEach((block, idx) => block.textContent = originalBlocks[idx]);
       removeRatingButtons(wrapper);
-
+      
     } else {
-      btn.textContent = "↺";
+      symbol.textContent = "↺";
+      symbol.classList.add("spinning");
+
       //dispatch promp processing for the whole group, with streaming
       const interrupted = await promptByGroup(group, language, level);
       if (!interrupted) {
         addRatingButtons(wrapper, group, language, level, lastLearningRate);
       };
+      symbol.classList.remove("spinning");
     };
   });
 }
@@ -292,13 +297,12 @@ async function promptByGroup(group, language, level){
         could fully understand it.
 
         Important:
-        - If a sentence is a question, you **must** keep it a question. Do **not** answer it.
+        - If a sentence is a question, you **must** keep it a question. Do **not** answer it. Do **not** give definitions of any concepts.
         - Do **not** answer the following question.
         - Do **not** change the factual meaning, claims, or relationships in the text.
         - You may only simplify **vocabulary**, **sentence structure**, or **grammar** — never the content itself.
         - Keep all information, details, and tone identical in meaning.
         - If a concept is too complex, **rephrase** it in simpler words instead of removing or changing it.
-        - Preserve the approximate original text length.
         - Preserve all quotes exactly as written.
         - Maintain the same formatting, punctuation, and approximate length.
         - Avoid unnecessary repetition.

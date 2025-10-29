@@ -64,8 +64,22 @@
 
 }
 
+.symbol {
+  position: absolute;
+}
+
+.spinning {
+  margin-left: 2px;
+  margin-bottom: 1px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(-360deg); }
+}
+
 /* basically "change frame that has a currently hovered button inside it" */
-.group-frame:has(.group-btn:hover, .easy-rate-button:hover, .hard-rate-button:hover) {
+.group-frame:has(.group-btn:hover, .easy-rate-button:hover, .hard-rate-button:hover, .group-btn.reverter) {
   background: #fdfac4;
   border: 1px solid #00000073 !important;
   border-radius:1px 5px 1px 5px;
@@ -91,6 +105,7 @@
   border-radius: 1px;
   cursor: pointer;
   z-index: 1;
+  background-color: #ffffff;
 }
 
 .rate-button:active {
