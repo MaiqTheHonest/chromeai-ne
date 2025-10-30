@@ -20,7 +20,8 @@ let language = null;
   window.turndownService = new TurndownService();
   
   const availability = await LanguageModel.availability();
-  if (!availability){
+  if (availability === "unavailable" || availability === "downloadable"){
+    console.log("Extension (Ne?) requires Gemini Nano to be installed.")
     let input = prompt("Would you like to install Gemini Nano on your device? (y/n)")
     if (["y", "yes", "ye", ""].contains(input)){
       
