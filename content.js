@@ -11,7 +11,7 @@ let language = null;
   if (!toggleStatus.enabled) return // i.e. do nothing for this run
   
   const timeState = await chrome.storage.local.get('timeState');
-  let [lastLearningRate, t] = [(timeState.timeState.learningRate || 1), (timeState.timeState.t || 0)];
+  let [lastLearningRate, t] = [(timeState?.timeState?.learningRate ?? 1), (timeState?.timeState?.t ?? 0)];
   const alpha = 0.5;
   lastLearningRate = lastLearningRate * (1 / (1 + t*alpha))
   t += 1;
@@ -19,29 +19,37 @@ let language = null;
   chrome.storage.local.set({'timeState': {learningRate: lastLearningRate, t: t}})
   window.turndownService = new TurndownService();
   
-  let model = await LanguageModel.create({outputlanguage:"en",
-    monitor(m) {
-      m.addEventListener('downloadprogress', (e) => {
-        console.log(`Downloaded ${e.loaded * 100}%`);
+  const availability = await LanguageModel.availability();
+  if (!availability){
+    let input = prompt("Would you like to install Gemini Nano on your device? (y/n)")
+    if (["y", "yes", "ye", ""].contains(input)){
+      
+      let model = await LanguageModel.create({outputlanguage:"en",
+        monitor(m) {
+          m.addEventListener('downloadprogress', (e) => {
+            console.log(`Downloaded ${e.loaded * 100}%`);
+          });
+        },
       });
-    },
-  });
-  
-  let detector = await LanguageDetector.create({
-    monitor(m) {
-      m.addEventListener('downloadprogress', (e) => {
-        console.log(`Downloaded ${e.loaded * 100}%`);
+      
+      let detector = await LanguageDetector.create({
+        monitor(m) {
+          m.addEventListener('downloadprogress', (e) => {
+            console.log(`Downloaded ${e.loaded * 100}%`);
+          });
+        },
       });
-    },
-  });
+    } else return;
+  }
 
-  preparePage(model, detector, lastLearningRate);
+
+  preparePage(lastLearningRate);
   
 })();
 
 
 
-async function preparePage(model, detector, lastLearningRate) {
+async function preparePage(lastLearningRate) {
   
   const selectors = [
     'main',
@@ -73,13 +81,12 @@ async function preparePage(model, detector, lastLearningRate) {
   }
 
   let languageGuessCounts = {"en": 1}; // defaults to english if not guesses
-
-  // debug
-  console.log("Located main text body: ", allArticles);
+  console.log("Located main text body: ", allArticles);  // debug
   if (!allArticles) return; // quit if nothing processable found on page
+  let detector = await LanguageDetector.create();
 
   for (article of allArticles) {
-
+    
     let textBlocks = getTextBlocks(article); // get smaller blocks within + divs longer than x chars
     for (block of textBlocks){
       //debug
