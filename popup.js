@@ -16,7 +16,7 @@
     if (availability === "unavailable" || availability === "downloadable"){
       console.log("Extension (Ne?) requires Gemini Nano to be installed.")
       let input = prompt("Would you like to install Gemini Nano on your device? (y/n)")
-      if (["y", "yes", "ye", ""].contains(input)){
+      if (["y", "yes", "ye", ""].includes(input)){
         
         let model = await LanguageModel.create({outputlanguage:"en",
           monitor(m) {
