@@ -33,7 +33,10 @@
             });
           },
         });
-      } else return;
+      } else {
+        console.log("installation refused");
+        return;
+      }
     }
   });
   
@@ -87,16 +90,21 @@
   const pointsByDay = await loadPoints();
   const dow = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   // console.log(pointsByDay);
-  const points = Object.values(pointsByDay);
-  // const points = [25, 20, 47, 65, 34, 72, 80, 62]
+  // const points = Object.values(pointsByDay);
+  const points = [25, 20, 47, 65, 34, 72, 80, 62]
   const currentStreak = calculateStreak(points);
 
   const nZ = Math.max(...points) * 0.01; // value that should be zero but looks nicer if its about 1% of the tallest bar
 
   const streakNode = document.getElementById("streak")
   let suffix = "";
+  let pluralSuffix = "";
+  if (currentStreak !== 1){
+    pluralSuffix = "s"
+  };
+
   if (currentStreak > 0) suffix = "\u{1F525}";
-  streakNode.textContent = ` current streak:  ${currentStreak} days ${suffix}`;
+  streakNode.textContent = ` current streak:  ${currentStreak} day${pluralSuffix} ${suffix}`;
   const barColor1 = "#63c991ff";
   const barColor2 = "#ffa040be";
 

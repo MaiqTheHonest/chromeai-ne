@@ -420,7 +420,7 @@ async function updateLocalLevelBy(points, language, lastLearningRate){
 
   // update language level
   chrome.storage.local.get("levels", (data) => {
-    const storedLevels = data.levels || {};
+    const storedLevels = data.levels ?? {};
     let currentLevel = storedLevels[language] || 2.5;
     const newLevel = currentLevel + lastLearningRate*points/100;
     storedLevels[language] = newLevel;
