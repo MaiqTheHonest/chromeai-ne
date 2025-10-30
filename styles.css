@@ -97,15 +97,16 @@
   text-align: center;
   text-decoration: none;
   width: auto;
-  height: auto;
-  padding-top: 3px;
-  padding-bottom: 3px;
-  padding-left: 8px;
-  padding-right: 8px;
+  height: auto !important;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
   border-radius: 1px;
   cursor: pointer;
   z-index: 1;
   background-color: #ffffff;
+  line-height: 1.25;
 }
 
 .rate-button:active {
@@ -117,7 +118,7 @@
 
 .hard-rate-button {
   position: absolute;
-  right: 8px;
+  right: 8px !important;
   bottom: 4px;
   color: #fd6666;
   border: 2px solid #fd6666 !important;
@@ -128,7 +129,7 @@
 .easy-rate-button {
   position: absolute;
   bottom: 4px;
-  right: 56px;
+  right: 66.5px !important;
   color: #269f5c;
   border: 2px solid #51c183 !important;
   box-shadow: 2px 2px 0 #51c183;
@@ -152,6 +153,7 @@
 
 .animated-text {
   position: absolute;
+  font-size: 15px;
   white-space: nowrap;
   top: 50%;
   left: 50%;

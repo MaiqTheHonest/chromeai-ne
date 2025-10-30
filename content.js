@@ -363,12 +363,12 @@ async function addRatingButtons(wrapper, group, language, level, lastLearningRat
   wrapper.style.height = wrapper.offsetHeight + 28 + "px"
   const easyRateBtn = document.createElement('button');
   easyRateBtn.className = 'easy-rate-button rate-button';
-  easyRateBtn.textContent = 'Easy';
+  easyRateBtn.textContent = 'Got it!';
   wrapper.lastChild.insertAdjacentElement('afterend', easyRateBtn);
 
   const hardRateBtn = document.createElement('button');
   hardRateBtn.className = 'hard-rate-button rate-button';
-  hardRateBtn.textContent = 'Hard';
+  hardRateBtn.textContent = 'uhhh...';
   wrapper.lastChild.insertAdjacentElement('afterend', hardRateBtn);
 
   hardRateBtn.addEventListener('click', async () => {
@@ -382,7 +382,7 @@ async function addRatingButtons(wrapper, group, language, level, lastLearningRat
     const floater = document.createElement("div");
     floater.className = "animated-text";
     floater.style.color = "#fd6666";
-    floater.textContent = "Try again";
+    floater.textContent = "Simplifying further...";
     hardRateBtn.appendChild(floater)
     easyRateBtn.classList.add("fade-out");
     hardRateBtn.classList.add("fade-out");
