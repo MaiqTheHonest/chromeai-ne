@@ -19,31 +19,6 @@ let language = null;
   chrome.storage.local.set({'timeState': {learningRate: lastLearningRate, t: t}})
   window.turndownService = new TurndownService();
   
-  const availability = await LanguageModel.availability();
-  if (availability === "unavailable" || availability === "downloadable"){
-    console.log("Extension (Ne?) requires Gemini Nano to be installed.")
-    let input = prompt("Would you like to install Gemini Nano on your device? (y/n)")
-    if (["y", "yes", "ye", ""].contains(input)){
-      
-      let model = await LanguageModel.create({outputlanguage:"en",
-        monitor(m) {
-          m.addEventListener('downloadprogress', (e) => {
-            console.log(`Downloaded ${e.loaded * 100}%`);
-          });
-        },
-      });
-      
-      let detector = await LanguageDetector.create({
-        monitor(m) {
-          m.addEventListener('downloadprogress', (e) => {
-            console.log(`Downloaded ${e.loaded * 100}%`);
-          });
-        },
-      });
-    } else return;
-  }
-
-
   preparePage(lastLearningRate);
   
 })();

@@ -8,10 +8,33 @@
     mainToggle.checked = !!data.enabled; // force to boolean
   });
   // fires when toggled
-  mainToggle.addEventListener('change', () => {
+  mainToggle.addEventListener('change', async() => {
     const enabled = mainToggle.checked;
     console.log('Toggled to:', enabled);
     chrome.storage.local.set({ enabled });
+    const availability = await LanguageModel.availability();
+    if (availability === "unavailable" || availability === "downloadable"){
+      console.log("Extension (Ne?) requires Gemini Nano to be installed.")
+      let input = prompt("Would you like to install Gemini Nano on your device? (y/n)")
+      if (["y", "yes", "ye", ""].contains(input)){
+        
+        let model = await LanguageModel.create({outputlanguage:"en",
+          monitor(m) {
+            m.addEventListener('downloadprogress', (e) => {
+              console.log(`Downloaded ${e.loaded * 100}%`);
+            });
+          },
+        });
+        
+        let detector = await LanguageDetector.create({
+          monitor(m) {
+            m.addEventListener('downloadprogress', (e) => {
+              console.log(`Downloaded ${e.loaded * 100}%`);
+            });
+          },
+        });
+      } else return;
+    }
   });
   
   
