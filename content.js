@@ -125,7 +125,7 @@ function getTextBlocks(article){
 
   // keep elements with own (non-child) text, paragraphs, or lists
   candidatesArray = candidatesArray.filter(el => {
-    if (getTopLevelText(el).length >= 20 || el.innerText.length > 20 || isList(el)) {return true;} 
+    if (getTopLevelText(el).length >= 20 ?? el.innerText.length > 20 ?? isList(el)) {return true;} 
     else {
       // console.log("removed element: ", el); // debug
       return false;

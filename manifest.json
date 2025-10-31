@@ -7,11 +7,17 @@
     "default_popup": "popup.html",
     "default_icon": "icons/iconMax.png"
   },
+  "icons": {
+    "48": "icons/icon48.png"
+  },
   "content_scripts": [{
     "matches": ["<all_urls>"],
     "js": ["smd.js", "turndown.js", "marked.js", "content.js"],
     "css": ["styles.css"],
-    "run_at": "document_idle"
+    "run_at": "document_idle",
+    "exclude_matches": [
+      "https://www.google.com/*"
+    ]
   }],
   "permissions": ["storage"]
 }
